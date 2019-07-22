@@ -1,65 +1,8 @@
 /**
- * vuex v3.1.1
+ * vuex v1.0.0
  * (c) 2019 Evan You
  * @license MIT
  */
-function applyMixin (Vue) {
-  const version = Number(Vue.version.split('.')[0]);
-
-  if (version >= 2) {
-    Vue.mixin({ beforeCreate: vuexInit });
-  } else {
-    // override init and inject vuex init procedure
-    // for 1.x backwards compatibility.
-    const _init = Vue.prototype._init;
-    Vue.prototype._init = function (options = {}) {
-      options.init = options.init
-        ? [vuexInit].concat(options.init)
-        : vuexInit;
-      _init.call(this, options);
-    };
-  }
-
-  /**
-   * Vuex init hook, injected into each instances init hooks list.
-   */
-
-  function vuexInit () {
-    const options = this.$options;
-    // store injection
-    if (options.store) {
-      this.$store = typeof options.store === 'function'
-        ? options.store()
-        : options.store;
-    } else if (options.parent && options.parent.$store) {
-      this.$store = options.parent.$store;
-    }
-  }
-}
-
-const target = typeof window !== 'undefined'
-  ? window
-  : typeof global !== 'undefined'
-    ? global
-    : {};
-const devtoolHook = target.__VUE_DEVTOOLS_GLOBAL_HOOK__;
-
-function devtoolPlugin (store) {
-  if (!devtoolHook) return
-
-  store._devtoolHook = devtoolHook;
-
-  devtoolHook.emit('vuex:init', store);
-
-  devtoolHook.on('vuex:travel-to-state', targetState => {
-    store.replaceState(targetState);
-  });
-
-  store.subscribe((mutation, state) => {
-    devtoolHook.emit('vuex:mutation', mutation, state);
-  });
-}
-
 /**
  * Get the first item that pass the test
  * by second argument function
@@ -93,6 +36,45 @@ function partial (fn, arg) {
     return fn(arg)
   }
 }
+
+function firstUpcase(str) {
+  if (typeof str !== 'string') return str
+  if (!str) return str
+  return str.replace(/^([a-z])/, $0 => $0.toUpperCase())
+}
+
+function fnSlice(isBefore, target, key, fn) {
+  let fn_ = fn;
+  if (!fn_) {
+    const firstUpcaseKey = firstUpcase(key);
+    const fullKey = (isBefore ? 'before' : 'after') + firstUpcaseKey;
+    fn_ = target[fullKey];
+    if (!fn_) return
+  }
+  if (target[key]) {
+    const _self = target[key];
+    target[key] = function (...args) {
+      if (isBefore) {
+        fn_.apply(this, args);
+      }
+      _self.apply(this, args);
+      if (!isBefore) {
+        fn_.apply(this, args);
+      }
+    };
+  } else {
+    target[key] = function (...args) {
+      if (isBefore) {
+        fn_.apply(this, args);
+      } else {
+        fn_.apply(this, args);
+      }
+    };
+  }
+}
+
+const beforeSlice = fnSlice.bind(null, true);
+const afterSlice = fnSlice.bind(null, false);
 
 // Base data struct for store's module, package with some attribute and method
 class Module {
@@ -284,19 +266,1029 @@ function makeAssertionMessage (path, key, type, value, expected) {
   return buf
 }
 
-let Vue; // bind on install
+let uid = 0;
+
+/**
+ * A dep is an observable that can have multiple
+ * watcher subscribing to it.
+ */
+class Dep {
+  // the current target watcher being evaluated.
+  // this is globally unique because there could be only one
+  // watcher being evaluated at any time.
+
+  constructor () {
+    this.id = uid++;
+    this.subs = [];
+  }
+
+  /**
+   * Add a subscriber.
+   *
+   * @param {Watcher} sub
+   */
+
+  addSub (sub) {
+    this.subs.push(sub);
+  }
+
+  /**
+   * Remove a subscriber.
+   *
+   * @param {Watcher} sub
+   */
+
+  removeSub (sub) {
+    this.subs.$remove(sub);
+  }
+
+  /**
+   * Add self as a dependency to the target watcher.
+   */
+
+  depend () {
+    Dep.target.addDep(this);
+  }
+
+  /**
+   * Notify all subscribers of a new value.
+   */
+
+  notify () {
+    const subs = this.subs;
+    for (let i = 0, l = subs.length; i < l; i++) {
+      subs[i].update();
+    }
+  }
+}
+Dep.target = null;
+
+const OB_NAME = '__ob__';
+const WATCHERS_PROPERTY_NAME = '__watchers__';
+const DATA_PROPTERTY_NAME = '__data__';
+
+const DEBUGGING = typeof process !== 'undefined'
+  && "development" !== 'production';
+
+/**
+ * Define property with value.
+ *
+ * @param {Object} object
+ * @param {String} property
+ * @param {*} value
+ * @param {Boolean} [enumerable]
+ */
+
+function defineValue (object, property, value, enumerable) {
+  Object.defineProperty(object, property, {
+    value,
+    enumerable: !!enumerable,
+    writable: true,
+    configurable: true,
+  });
+}
+
+/**
+ * Define property with getter and setter.
+ *
+ * @param {Object} object
+ * @param {String} property
+ * @param {Function} getter
+ * @param {Function} setter
+ */
+
+function defineAccessor (object, property, getter, setter) {
+  Object.defineProperty(object, property, {
+    get: getter,
+    set: setter,
+    enumerable: true,
+    configurable: true,
+  });
+}
+
+/**
+ * Array type check.
+ *
+ * @return {Boolean}
+ */
+
+const isArray = Array.isArray;
+
+/**
+ * Strict object type check. Only returns true
+ * for plain JavaScript objects.
+ *
+ * @param {*} object
+ * @return {Boolean}
+ */
+
+const toString = Object.prototype.toString;
+const OBJECT_STRING = '[object Object]';
+function isPlainObject (object) {
+  return toString.call(object) === OBJECT_STRING
+}
+
+/**
+ * Quick object check - this is primarily used to tell
+ * Objects from primitive values when we know the value
+ * is a JSON-compliant type.
+ *
+ * @param {*} object
+ * @return {Boolean}
+ */
+
+function isObject$1 (object) {
+  return object !== null && typeof object === 'object'
+}
+
+/**
+ * Function type check
+ *
+ * @param {*} func
+ * @param {Boolean}
+ */
+
+function isFunction (func) {
+  return typeof func === 'function'
+}
+
+/**
+ * Iterate object
+ *
+ * @param {Object} object
+ * @param {Function} callback
+ */
+
+function everyEntries (object, callback) {
+  const keys = Object.keys(object);
+  for (let i = 0, l = keys.length; i < l; i++) {
+    callback(keys[i], object[keys[i]]);
+  }
+}
+
+/**
+ * noop is function which is nothing to do.
+ */
+
+function noop () {}
+
+/**
+ * @param {String} string
+ */
+
+const warn = typeof DEBUGGING !== undefined && DEBUGGING
+  && typeof console !== 'undefined' && console
+  && isFunction(console.warn)
+    ? console.warn
+    : noop;
+
+let _Set;
+if (typeof Set !== 'undefined' && Set.toString().match(/native code/)) {
+  // use native Set when available.
+  _Set = Set;
+} else {
+  // a non-standard Set polyfill that only works with primitive keys.
+  _Set = function () {
+    this.set = Object.create(null);
+  };
+  _Set.prototype.has = function (key) {
+    return this.set[key] !== undefined
+  };
+  _Set.prototype.add = function (key) {
+    this.set[key] = 1;
+  };
+  _Set.prototype.clear = function () {
+    this.set = Object.create(null);
+  };
+}
+
+const arrayPrototype = Array.prototype;
+const arrayMethods = Object.create(arrayPrototype);
+const arrayMutativeMethods = [
+  'push',
+  'pop',
+  'shift',
+  'unshift',
+  'splice',
+  'sort',
+  'reverse',
+];
+
+/**
+ * Augment an target Array with arrayMethods
+ *
+ * @param {Array} array
+ */
+
+function amend (array) {
+  Object.setPrototypeOf(array, arrayMethods);
+}
+
+/**
+ * Intercept mutating methods and emit events
+ */
+
+for (
+  let i = 0, l = arrayMutativeMethods.length, method;
+  i < l;
+  method = arrayMutativeMethods[++i]
+) {
+  // cache original method
+  const original = arrayPrototype[method];
+  defineValue(arrayMethods, method, function mutator (...args) {
+    const result = original.apply(this, args);
+    const ob = this[OB_NAME];
+    let inserted;
+    switch (method) {
+      case 'push':
+        inserted = args;
+        break
+      case 'unshift':
+        inserted = args;
+        break
+      case 'splice':
+        inserted = args.slice(2);
+        break
+    }
+    if (inserted) ob.observeArray(inserted);
+    ob.dep.notify(); // notify change
+    return result
+  });
+}
+
+/**
+ * Swap the element at the given index with a new value
+ * and emits corresponding event.
+ *
+ * @param {Number} index
+ * @param {*} value
+ * @return {*} - replaced element
+ */
+
+function $set (index, value) {
+  if (index >= this.length) {
+    this.length = Number(index) + 1;
+  }
+  return this.splice(index, 1, value)[0]
+}
+defineValue(arrayPrototype, '$set', $set);
+
+/**
+ * Convenience method to remove the element at given index
+ * or target element reference.
+ *
+ * @param {*} item
+ * @return {*} - removed element
+ */
+
+function $remove (item) {
+  if (!this.length) return
+  const index = this.indexOf(item);
+  if (index > -1) {
+    return this.splice(index, 1)
+  }
+}
+defineValue(arrayPrototype, '$remove', $remove);
+
+/**
+ * Observer class that are attached to each observed
+ * object. Once attached, the observer converts target
+ * object's property keys into getter/setters that
+ * collect dependencies and dispatches updates.
+ *
+ * @class
+ * @param {Array|Object} value
+ */
+
+class Observer {
+  constructor (value) {
+    this.value = value;
+    this.dep = new Dep();
+    defineValue(value, OB_NAME, this);
+    if (isArray(value)) {
+      amend(value);
+      this.observeArray(value);
+    } else {
+      this.walk(value);
+    }
+  }
+
+  /**
+   * Walk through each property and convert them into
+   * getter/setters. This method should only be called when
+   * value type is Object.
+   *
+   * @param {Object} object
+   */
+
+  walk (object) {
+    everyEntries(object, (key, value) => this.convert(key, value));
+  }
+
+  /**
+   * Observe a list of Array items.
+   *
+   * @param {Array} items
+   */
+
+  observeArray (items) {
+    for (let i = 0, l = items.length; i < l; i++) {
+      observe(items[i]);
+    }
+  }
+
+  /**
+   * Convert a property into getter/setter so we can emit
+   * the events when the property is accessed/changed.
+   *
+   * @param {String} key
+   * @param {*} value
+   */
+
+  convert (key, value) {
+    defineReactive(this.value, key, value);
+  }
+}
+
+/**
+ * Attempt to create an observer instance for a value,
+ * returns the new observer if successfully observed,
+ * or the existing observer if the value already has one.
+ *
+ * @param {*} value
+ * @return {Observer|undefined}
+ */
+
+function observe (value) {
+  if (!value || typeof value !== 'object') return
+  let observer;
+  if (
+    Object.prototype.hasOwnProperty.call(value, OB_NAME)
+    && value[OB_NAME] instanceof Observer
+  ) {
+    observer = value[OB_NAME];
+  } else if (
+    (isArray(value) || isPlainObject(value))
+    && Object.isExtensible(value)
+  ) {
+    observer = new Observer(value);
+  }
+  return observer
+}
+
+/**
+ * Define a reactive property on an Object.
+ *
+ * @param {Object} object
+ * @param {String} key
+ * @param {*} value
+ */
+
+function defineReactive (object, key, value) {
+  const dep = new Dep();
+
+  const desc = Object.getOwnPropertyDescriptor(object, key);
+  if (desc && desc.configurable === false) return
+
+  // cater for pre-defined getter/setters
+  const getter = desc && desc.get;
+  const setter = desc && desc.set;
+
+  let childOb = observe(value);
+
+  function reactiveGetter () {
+    const currentValue = getter ? getter.call(object) : value;
+    if (Dep.target) {
+      dep.depend();
+      if (childOb) {
+        childOb.dep.depend();
+      }
+      if (isArray(currentValue)) {
+        for (let i = 0, l = currentValue.length, e; i < l; i++) {
+          e = currentValue[i];
+          e && e[OB_NAME] && e[OB_NAME].dep.depend();
+        }
+      }
+    }
+    return currentValue
+  }
+  function reactiveSetter (newValue) {
+    const oldValue = getter ? getter.call(object) : value;
+    if (newValue === oldValue) return
+    if (setter) {
+      setter.call(object, newValue);
+    } else {
+      value = newValue;
+    }
+    childOb = observe(newValue);
+    dep.notify();
+  }
+  defineAccessor(object, key, reactiveGetter, reactiveSetter);
+}
+
+/**
+ * Build a getter function. Requires eval.
+ *
+ * We isolate the try/catch so it doesn't affect the
+ * optimization of the parse function when it is not called.
+ *
+ * @param {String} body
+ * @return {Function|undefined}
+ */
+
+function makeGetterFunction (body) {
+  try {
+    /* eslint-disable no-new-func */
+    return new Function('scope', `return ${body};`)
+    /* eslint-enable no-new-func */
+  } catch (e) {
+    warn('Invalid expression. Generated function body: ' + body);
+  }
+}
+
+/**
+ * Parse an expression to getter.
+ *
+ * @param {String} expression
+ * @return {Function|undefined}
+ */
+
+function parse (expression) {
+  expression = String.prototype.trim.call(expression);
+  return makeGetterFunction('scope.' + expression)
+}
+
+let queue = [];
+let has = {};
+let waiting = false;
+let queueIndex;
+
+/**
+ * Reset the batcher's state.
+ */
+
+function resetBatcherState () {
+  queue = [];
+  has = {};
+  waiting = false;
+}
+
+/**
+ * Flush queue and run the watchers.
+ */
+
+function flushBatcherQueue () {
+  runBatcherQueue(queue);
+  resetBatcherState();
+}
+
+/**
+ * Run the watchers in a single queue.
+ *
+ * @param {Array} queue
+ */
+
+function runBatcherQueue (queue) {
+  // do not cache length because more watchers might be pushed
+  // as we run existing watchers
+  for (queueIndex = 0; queueIndex < queue.length; queueIndex++) {
+    const watcher = queue[queueIndex];
+    const id = watcher.id;
+    has[id] = null;
+    watcher.run();
+  }
+}
+
+/**
+ * Defer a task to execute it asynchronously. Ideally this
+ * should be executed as a microtask, so we leverage
+ * MutationObserver if it's available, and fallback to
+ * setTimeout(0).
+ *
+ * @param {Function} callback
+ * @param {Object} context
+ */
+
+const nextTick = (function () {
+  let callbacks = [];
+  let pending = false;
+  let timerFunction;
+  function nextTickHandler () {
+    pending = false;
+    const callbackCopies = callbacks.slice(0);
+    callbacks = [];
+    for (let i = 0; i < callbackCopies.length; i++) {
+      callbackCopies[i]();
+    }
+  }
+
+  if (typeof MutationObserver !== 'undefined') {
+    let counter = 1;
+    /* global MutationObserver */
+    const observer = new MutationObserver(nextTickHandler);
+    /* global */
+    const textNode = document.createTextNode(counter);
+    observer.observe(textNode, {characterData: true});
+    timerFunction = function () {
+      counter = (counter + 1) % 2;
+      textNode.data = counter;
+    };
+  } else {
+    // webpack attempts to inject a shim for setImmediate
+    // if it is used as a global, so we have to work around that to
+    // avoid bundling unnecessary code.
+    const inBrowser = typeof window !== 'undefined'
+      && Object.prototype.toString.call(window) !== '[object Object]';
+    const context =
+      inBrowser ? window : typeof global !== 'undefined' ? global : {};
+    timerFunction = context.setImmediate || setTimeout;
+  }
+  return function (callback, context) {
+    const func = context ? function () { callback.call(context); } : callback;
+    callbacks.push(func);
+    if (pending) return
+    pending = true;
+    timerFunction(nextTickHandler, 0);
+  }
+})();
+
+/**
+ * Push a watcher into the watcher queue.
+ * Jobs with duplicate IDs will be skipped unless it's
+ * pushed when the queue is being flushed.
+ *
+ * @param {Watcher} watcher
+ *   properties:
+ *   - {Number} id
+ *   - {Function} run
+ */
+
+function batch (watcher) {
+  const id = watcher.id;
+  if (has[id] == null) {
+    has[id] = queue.length;
+    queue.push(watcher);
+    // queue the flush
+    if (!waiting) {
+      waiting = true;
+      nextTick(flushBatcherQueue);
+    }
+  }
+}
+
+let uid$1 = 0;
+
+class Watcher {
+
+  /**
+   * A watcher parses an expression, collects dependencies,
+   * and fires callback when the expression value changes.
+   *
+   * @param {Object} owner
+   * @param {String|Function} getter
+   * @param {Function} callback
+   * @param {Object} options
+   *                 - {Boolean} deep
+   *                 - {Boolean} sync
+   *                 - {Boolean} lazy
+   * @constructor
+   */
+
+  constructor (owner, getter, callback, options) {
+    owner[WATCHERS_PROPERTY_NAME].push(this);
+    this.owner = owner;
+    this.getter = getter;
+    this.callback = callback;
+    this.options = options;
+    // uid for batching
+    this.id = ++uid$1;
+    this.active = true;
+    // for lazy watchers
+    this.dirty = options.lazy;
+    this.deps = [];
+    this.newDeps = [];
+    this.depIds = new _Set();
+    this.newDepIds = new _Set();
+    this.value = options.lazy
+      ? undefined
+      : this.get();
+  }
+
+  /**
+   * Evaluate the getter, and re-collect dependencies.
+   */
+
+  get () {
+    this.beforeGet();
+    const scope = this.owner;
+    const value = this.getter.call(scope, scope);
+    if (this.options.deep) {
+      traverse(value);
+    }
+    this.afterGet();
+    return value
+  }
+
+  /**
+   * Prepare for dependency collection.
+   */
+
+  beforeGet () {
+    Dep.target = this;
+  }
+
+  /**
+   * Add a dependency to this directive.
+   *
+   * @param {Dep} dep
+   */
+
+  addDep (dep) {
+    const id = dep.id;
+    if (!this.newDepIds.has(id)) {
+      this.newDepIds.add(id);
+      this.newDeps.push(dep);
+      if (!this.depIds.has(id)) {
+        dep.addSub(this);
+      }
+    }
+  }
+
+  /**
+   * Clean up for dependency collection.
+   */
+
+  afterGet () {
+    Dep.target = null;
+    let i = this.deps.length;
+    while (i--) {
+      const dep = this.deps[i];
+      if (!this.newDepIds.has(dep.id)) {
+        dep.removeSub(this);
+      }
+    }
+    let tmp = this.depIds;
+    this.depIds = this.newDepIds;
+    this.newDepIds = tmp;
+    this.newDepIds.clear();
+    tmp = this.deps;
+    this.deps = this.newDeps;
+    this.newDeps = tmp;
+    this.newDeps.length = 0;
+  }
+
+  /**
+   * Will be called when a dependency changes.
+   */
+
+  update () {
+    if (this.options.lazy) {
+      this.dirty = true;
+    } else if (this.options.sync) {
+      this.run();
+    } else {
+      batch(this);
+    }
+  }
+
+  /**
+   * Will be called by the batcher.
+   */
+
+  run () {
+    if (this.active) {
+      const value = this.get();
+      if (
+        value !== this.value
+        // Deep watchers and watchers on Object/Arrays should fire even when
+        // the value is the same, because the value may have mutated;
+        || ((isObject$1(value) || this.options.deep))
+      ) {
+        const oldValue = this.value;
+        this.value = value;
+        this.callback.call(this.owner, value, oldValue);
+      }
+    }
+  }
+
+  /**
+   * Evaluate the value of the watcher.
+   * This only gets called for lazy watchers.
+   */
+
+  evaluate () {
+    // avoid overwriting another watcher that is being collected.
+    const current = Dep.target;
+    this.value = this.get();
+    this.dirty = false;
+    Dep.target = current;
+  }
+
+  /**
+   * Depend on all deps collected by this watcher.
+   */
+
+  depend () {
+    let i = this.deps.length;
+    while (i--) {
+      this.deps[i].depend();
+    }
+  }
+
+  /**
+   * Remove self from all dependencies' subcriber list.
+   */
+
+  teardown () {
+    if (this.active) {
+      let i = this.deps.length;
+      while (i--) {
+        this.deps[i].removeSub(this);
+      }
+      this.active = false;
+      this.owner = this.callback = this.value = null;
+    }
+  }
+}
+
+/**
+ * Recrusively traverse an object to evoke all converted
+ * getters, so that every nested property inside the object
+ * is collected as a "deep" dependency.
+ *
+ * @param {*} value
+ */
+
+function traverse (value) {
+  let i, keys;
+  if (isArray(value)) {
+    i = value.length;
+    while (i--) traverse(value[i]);
+  } else if (isObject$1(value)) {
+    keys = Object.keys(value);
+    i = keys.length;
+    while (i--) traverse(value[keys[i]]);
+  }
+}
+
+/**
+ * Create an watcher instance, returns the new watcher.
+ *
+ * @param {Object} owner
+ * @param {String|Function} expressionOrFunction
+ * @param {Function} callback
+ * @param {Object} options
+ *                 - {Boolean} deep
+ *                 - {Boolean} sync
+ *                 - {Boolean} lazy
+ * @return {Watcher}
+ */
+
+function watch (owner, expressionOrFunction, callback, options) {
+  // parse expression for getter
+  const getter = isFunction(expressionOrFunction)
+               ? expressionOrFunction
+               : parse(expressionOrFunction);
+  return new Watcher(owner, getter, callback, options)
+}
+
+/**
+ * Make a computed getter, which can collect dependencies.
+ *
+ * @param {Object} owner
+ * @param {Function} getter
+ */
+
+function makeComputed (owner, getter, ob) {
+  const watcher = new Watcher(owner, getter, null, {
+    deep: ob.deep,
+    lazy: true,
+    sync: ob.sync,
+  });
+  return function computedGetter () {
+    if (watcher.options.lazy && Dep.target && !Dep.target.options.lazy) {
+      watcher.options.lazy = false;
+      watcher.callback = function () {
+        const deps = watcher.deps;
+        for (let i = 0, l = deps.length; i < l; i++) {
+          deps[i].notify();
+        }
+      };
+    }
+    if (watcher.dirty) {
+      watcher.evaluate();
+    }
+    if (Dep.target) {
+      watcher.depend();
+    }
+    return watcher.value
+  }
+}
+
+// Only could be react, compute or watch
+ob.default = watch$1;
+ob.deep = ob.lazy = ob.sync = false;
+
+Object.setPrototypeOf(ob, {react, compute, watch: watch$1, observe: init});
+
+/**
+ * ob
+ *
+ * @public
+ * @param {Object} target
+ * @param {*} [expression]
+ * @param {*} [func]
+ * @param {*} [options]
+ * @return {Function} ob
+ */
+
+function ob (target, expression, func, options) {
+  init(target);
+  return ob.default(target, expression, func, options)
+}
+
+/**
+ * React options
+ *
+ * @public
+ * @param {Object} options
+ * @param {Object} [target]
+ * @return {Function} ob
+ */
+
+function react (options, target) {
+  init(target || {});
+  options.methods && carryMethods(target, options.methods);
+  options.data && reactProperties(target, options.data);
+  options.computed && computeProperties(target, options.computed);
+  options.watchers && watchProperties(target, options.watchers);
+  return target
+}
+
+/**
+ * Compute property
+ *
+ * @public
+ * @param {Object} target
+ * @param {String} name
+ * @param {Function|Object} getterOrAccessor
+ *        - Function getter
+ *        - Object accessor
+ *          - Function [get]  - getter
+ *          - Function [set]  - setter
+ *          - Boolean [cache]
+ * @param {Boolean} [cache]
+ */
+
+function compute (target, name, getterOrAccessor, cache) {
+  init(target);
+  let getter, setter;
+  if (isFunction(getterOrAccessor)) {
+    getter = cache !== false
+            ? makeComputed(target, getterOrAccessor, ob)
+            : getterOrAccessor.bind(this);
+    setter = noop;
+  } else {
+    getter = getterOrAccessor.get
+            ? getterOrAccessor.cache !== false || cache !== false
+              ? makeComputed(target, getterOrAccessor.get, ob)
+              : getterOrAccessor.get.bind(this)
+            : noop;
+    setter = getterOrAccessor.set ? getterOrAccessor.set.bind(this) : noop;
+  }
+  defineAccessor(target, name, getter, setter);
+}
+
+/**
+ * Watch property
+ *
+ * @public
+ * @param {Object} target
+ * @param {String|Function} expressionOrFunction
+ * @param {Function} callback
+ * @param {Object} [options]
+ *                 - {Boolean} deep
+ *                 - {Boolean} sync
+ *                 - {Boolean} lazy
+ * @return {Watcher}
+ */
+
+function watch$1 (target, expressionOrFunction, callback, options = ob) {
+  init(target);
+  return watch(target, expressionOrFunction, callback, options)
+}
+
+/**
+ * @private
+ * @param {Object} target
+ */
+
+function init (target) {
+  if (!target || !target.hasOwnProperty) {return}
+  if (target.hasOwnProperty(WATCHERS_PROPERTY_NAME)) {
+    return
+  }
+  defineValue(target, WATCHERS_PROPERTY_NAME, [], false);
+  defineValue(target, DATA_PROPTERTY_NAME, Object.create(null), false);
+  observe(target[DATA_PROPTERTY_NAME]);
+  reactSelfProperties(target);
+}
+
+/**
+ * @private
+ * @param {Object} target
+ * @param {Object} methods
+ */
+
+function carryMethods (target, methods) {
+  everyEntries(methods, (name, method) => {
+    target[name] = method.bind(target);
+  });
+}
+
+/**
+ * @private
+ * @param {Object} target
+ * @param {String} key
+ * @param {*} value
+ */
+
+function reactProperty (target, key, value) {
+  target[DATA_PROPTERTY_NAME][key] = value;
+  defineReactive(target[DATA_PROPTERTY_NAME], key, value);
+  proxy(target, key);
+}
+
+/**
+ * @private
+ * @param {Object} target
+ * @param {Object} properties
+ */
+
+function reactProperties (target, properties) {
+  everyEntries(properties, (key, value) => reactProperty(target, key, value));
+}
+
+/**
+ * @private
+ * @param {Object} target
+ */
+
+function reactSelfProperties (target) {
+  everyEntries(target, (key, value) => {
+    !isFunction(value) && reactProperty(target, key, value);
+  });
+}
+
+/**
+ * @private
+ * @param {Object} target
+ * @param {Object} properties
+ */
+
+function computeProperties (target, properties) {
+  everyEntries(properties, (key, value) => compute(target, key, value));
+}
+
+/**
+ * @private
+ * @param {Object} target
+ * @param {Object} properties
+ */
+
+function watchProperties (target, properties) {
+  everyEntries(properties, (expression, functionOrOption) => {
+    if (isFunction(functionOrOption)) {
+      watch$1(target, expression, functionOrOption);
+    } else {
+      watch$1(target, expression, functionOrOption.watcher, functionOrOption);
+    }
+  });
+}
+
+/**
+ * @private
+ * @param {Object} target
+ * @param {String} key
+ */
+
+function proxy (target, key) {
+  function getter () {
+    return target[DATA_PROPTERTY_NAME][key]
+  }
+  function setter (value) {
+    target[DATA_PROPTERTY_NAME][key] = value;
+  }
+  defineAccessor(target, key, getter, setter);
+}
 
 class Store {
   constructor (options = {}) {
     // Auto install if it is not done yet and `window` has `Vue`.
     // To allow users to avoid auto-installation in some cases,
     // this code should be placed here. See #731
-    if (!Vue && typeof window !== 'undefined' && window.Vue) {
-      install(window.Vue);
-    }
 
     {
-      assert(Vue, `must call Vue.use(Vuex) before creating a store instance.`);
       assert(typeof Promise !== 'undefined', `vuex requires a Promise polyfill in this browser.`);
       assert(this instanceof Store, `store must be called with the new operator.`);
     }
@@ -315,7 +1307,6 @@ class Store {
     this._modules = new ModuleCollection(options);
     this._modulesNamespaceMap = Object.create(null);
     this._subscribers = [];
-    this._watcherVM = new Vue();
 
     // bind commit and dispatch to self
     const store = this;
@@ -344,14 +1335,10 @@ class Store {
     // apply plugins
     plugins.forEach(plugin => plugin(this));
 
-    const useDevtools = options.devtools !== undefined ? options.devtools : Vue.config.devtools;
-    if (useDevtools) {
-      devtoolPlugin(this);
-    }
   }
 
   get state () {
-    return this._vm._data.$$state
+    return this._vm.state
   }
 
   set state (v) {
@@ -369,6 +1356,7 @@ class Store {
     } = unifyObjectStyle(_type, _payload, _options);
 
     const mutation = { type, payload };
+
     const entry = this._mutations[type];
     if (!entry) {
       {
@@ -384,6 +1372,7 @@ class Store {
     this._subscribers.forEach(sub => sub(mutation, this.state));
 
     if (
+      
       options && options.silent
     ) {
       console.warn(
@@ -452,12 +1441,12 @@ class Store {
     {
       assert(typeof getter === 'function', `store.watch only accepts a function.`);
     }
-    return this._watcherVM.$watch(() => getter(this.state, this.getters), cb, options)
+    return ob(() => getter(this.state, this.getters), cb, options)
   }
 
   replaceState (state) {
     this._withCommit(() => {
-      this._vm._data.$$state = state;
+      this._vm.state = state;
     });
   }
 
@@ -485,15 +1474,16 @@ class Store {
     this._modules.unregister(path);
     this._withCommit(() => {
       const parentState = getNestedState(this.state, path.slice(0, -1));
-      Vue.delete(parentState, path[path.length - 1]);
+      console.log('Vue.delete', parentState, path[path.length - 1]);
+      // Vue.delete(parentState, path[path.length - 1])
     });
     resetStore(this);
   }
 
-  hotUpdate (newOptions) {
-    this._modules.update(newOptions);
-    resetStore(this, true);
-  }
+  // hotUpdate (newOptions) {
+  //   this._modules.update(newOptions)
+  //   resetStore(this, true)
+  // }
 
   _withCommit (fn) {
     const committing = this._committing;
@@ -515,7 +1505,7 @@ function genericSubscribe (fn, subs) {
   }
 }
 
-function resetStore (store, hot) {
+function resetStore (store) {
   store._actions = Object.create(null);
   store._mutations = Object.create(null);
   store._wrappedGetters = Object.create(null);
@@ -524,23 +1514,22 @@ function resetStore (store, hot) {
   // init all modules
   installModule(store, state, [], store._modules.root, true);
   // reset vm
-  resetStoreVM(store, state, hot);
+  resetStoreVM(store, state);
 }
 
-function resetStoreVM (store, state, hot) {
-  const oldVm = store._vm;
-
+function resetStoreVM (store, state) {
   // bind store public getters
   store.getters = {};
   const wrappedGetters = store._wrappedGetters;
-  const computed = {};
+  ob.observe(state);
+  const getters = {};
   forEachValue(wrappedGetters, (fn, key) => {
     // use computed to leverage its lazy-caching mechanism
     // direct inline function use will lead to closure preserving oldVm.
     // using partial to return function with only arguments preserved in closure enviroment.
-    computed[key] = partial(fn, store);
+    ob.compute(getters, key, partial(fn, state));
     Object.defineProperty(store.getters, key, {
-      get: () => store._vm[key],
+      get: () => store._vm.getters[key],
       enumerable: true // for local getters
     });
   });
@@ -548,31 +1537,10 @@ function resetStoreVM (store, state, hot) {
   // use a Vue instance to store the state tree
   // suppress warnings just in case the user has added
   // some funky global mixins
-  const silent = Vue.config.silent;
-  Vue.config.silent = true;
-  store._vm = new Vue({
-    data: {
-      $$state: state
-    },
-    computed
-  });
-  Vue.config.silent = silent;
-
-  // enable strict mode for new vm
-  if (store.strict) {
-    enableStrictMode(store);
-  }
-
-  if (oldVm) {
-    if (hot) {
-      // dispatch changes in all subscribed watchers
-      // to force getter re-evaluation for hot reloading.
-      store._withCommit(() => {
-        oldVm._data.$$state = null;
-      });
-    }
-    Vue.nextTick(() => oldVm.$destroy());
-  }
+  store._vm = {
+    state,
+    getters
+  };
 }
 
 function installModule (store, rootState, path, module, hot) {
@@ -581,6 +1549,9 @@ function installModule (store, rootState, path, module, hot) {
 
   // register in namespace map
   if (module.namespaced) {
+    if (store._modulesNamespaceMap[namespace] && "development" !== 'production') {
+      console.error(`[vuex] duplicate namespace ${namespace} for the namespaced module ${path.join('/')}`);
+    }
     store._modulesNamespaceMap[namespace] = module;
   }
 
@@ -589,7 +1560,8 @@ function installModule (store, rootState, path, module, hot) {
     const parentState = getNestedState(rootState, path.slice(0, -1));
     const moduleName = path[path.length - 1];
     store._withCommit(() => {
-      Vue.set(parentState, moduleName, module.state);
+      console.log('Vue.set', parentState, moduleName, module.state);
+      // Vue.set(parentState, moduleName, module.state)
     });
   }
 
@@ -631,7 +1603,7 @@ function makeLocalContext (store, namespace, path) {
 
       if (!options || !options.root) {
         type = namespace + type;
-        if (!store._actions[type]) {
+        if ( !store._actions[type]) {
           console.error(`[vuex] unknown local action type: ${args.type}, global type: ${type}`);
           return
         }
@@ -647,7 +1619,7 @@ function makeLocalContext (store, namespace, path) {
 
       if (!options || !options.root) {
         type = namespace + type;
-        if (!store._mutations[type]) {
+        if ( !store._mutations[type]) {
           console.error(`[vuex] unknown local mutation type: ${args.type}, global type: ${type}`);
           return
         }
@@ -745,14 +1717,6 @@ function registerGetter (store, type, rawGetter, local) {
   };
 }
 
-function enableStrictMode (store) {
-  store._vm.$watch(function () { return this._data.$$state }, () => {
-    {
-      assert(store._committing, `do not mutate vuex store state outside mutation handlers.`);
-    }
-  }, { deep: true, sync: true });
-}
-
 function getNestedState (state, path) {
   return path.length
     ? path.reduce((state, key) => state[key], state)
@@ -773,17 +1737,11 @@ function unifyObjectStyle (type, payload, options) {
   return { type, payload, options }
 }
 
-function install (_Vue) {
-  if (Vue && _Vue === Vue) {
-    {
-      console.error(
-        '[vuex] already installed. Vue.use(Vuex) should be called only once.'
-      );
-    }
-    return
-  }
-  Vue = _Vue;
-  applyMixin(Vue);
+function install(store) {
+  const injectRef = Object.getPrototypeOf(global) || global;
+  if (injectRef.$store) return
+  injectRef.$store = store;
+  injectRef.$ob = ob;
 }
 
 /**
@@ -858,7 +1816,7 @@ const mapGetters = normalizeNamespace((namespace, getters) => {
       if (namespace && !getModuleByNamespace(this.$store, 'mapGetters', namespace)) {
         return
       }
-      if (!(val in this.$store.getters)) {
+      if ( !(val in this.$store.getters)) {
         console.error(`[vuex] unknown getter: ${val}`);
         return
       }
@@ -948,16 +1906,29 @@ function normalizeNamespace (fn) {
  */
 function getModuleByNamespace (store, helper, namespace) {
   const module = store._modulesNamespaceMap[namespace];
-  if (!module) {
+  if ( !module) {
     console.error(`[vuex] module namespace not found in ${helper}(): ${namespace}`);
   }
   return module
 }
 
+function Component (config) {
+  const computed = config.computed;
+  delete config.computed;
+  beforeSlice(config, 'onInit', function() {
+    this.$store = global.$store;
+    Object.keys(computed).forEach(key => {
+      global.$ob.compute(this, key, computed[key]);
+    });
+  });
+  return config
+}
+
 var index_esm = {
   Store,
   install,
-  version: '3.1.1',
+  version: '1.0.0',
+  Component,
   mapState,
   mapMutations,
   mapGetters,
@@ -966,4 +1937,4 @@ var index_esm = {
 };
 
 export default index_esm;
-export { Store, install, mapState, mapMutations, mapGetters, mapActions, createNamespacedHelpers };
+export { Component, Store, createNamespacedHelpers, install, mapActions, mapGetters, mapMutations, mapState };

@@ -31,7 +31,7 @@ export default function createLogger ({
         try {
           startMessage.call(logger, message)
         } catch (e) {
-          console.log(message)
+          console.log(e, message)
         }
 
         logger.log('%c prev state', 'color: #9E9E9E; font-weight: bold', transformer(prevState))

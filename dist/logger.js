@@ -54,6 +54,51 @@
     return copy
   }
 
+  function firstUpcase(str) {
+    if (typeof str !== 'string') { return str }
+    if (!str) { return str }
+    return str.replace(/^([a-z])/, function ($0) { return $0.toUpperCase(); })
+  }
+
+  function fnSlice(isBefore, target, key, fn) {
+    var fn_ = fn;
+    if (!fn_) {
+      var firstUpcaseKey = firstUpcase(key);
+      var fullKey = (isBefore ? 'before' : 'after') + firstUpcaseKey;
+      fn_ = target[fullKey];
+      if (!fn_) { return }
+    }
+    if (target[key]) {
+      var _self = target[key];
+      target[key] = function () {
+        var args = [], len = arguments.length;
+        while ( len-- ) args[ len ] = arguments[ len ];
+
+        if (isBefore) {
+          fn_.apply(this, args);
+        }
+        _self.apply(this, args);
+        if (!isBefore) {
+          fn_.apply(this, args);
+        }
+      };
+    } else {
+      target[key] = function () {
+        var args = [], len = arguments.length;
+        while ( len-- ) args[ len ] = arguments[ len ];
+
+        if (isBefore) {
+          fn_.apply(this, args);
+        } else {
+          fn_.apply(this, args);
+        }
+      };
+    }
+  }
+
+  var beforeSlice = fnSlice.bind(null, true);
+  var afterSlice = fnSlice.bind(null, false);
+
   // Credits: borrowed code from fcomb/redux-logger
 
   function createLogger (ref) {
@@ -86,7 +131,7 @@
           try {
             startMessage.call(logger, message);
           } catch (e) {
-            console.log(message);
+            console.log(e, message);
           }
 
           logger.log('%c prev state', 'color: #9E9E9E; font-weight: bold', transformer(prevState));
