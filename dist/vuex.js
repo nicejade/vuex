@@ -1085,7 +1085,7 @@
   ob.default = watch$1;
   ob.deep = ob.lazy = ob.sync = false;
 
-  Object.setPrototypeOf(ob, {react: react, compute: compute, watch: watch$1, observe: init});
+  Object.setPrototypeOf(ob, {react: react, compute: compute, watch: watch$1, watche: watch, observe: init, computeNotInit: computeNotInit});
 
   /**
    * ob
@@ -1138,6 +1138,25 @@
 
   function compute (target, name, getterOrAccessor, cache) {
     init(target);
+    computeNotInit(target, name, getterOrAccessor, cache);
+  }
+
+  /**
+   * Compute property do not init
+   *
+   * @public
+   * @param {Object} target
+   * @param {String} name
+   * @param {Function|Object} getterOrAccessor
+   *        - Function getter
+   *        - Object accessor
+   *          - Function [get]  - getter
+   *          - Function [set]  - setter
+   *          - Boolean [cache]
+   * @param {Boolean} [cache]
+   */
+
+  function computeNotInit (target, name, getterOrAccessor, cache) {
     var getter, setter;
     if (isFunction(getterOrAccessor)) {
       getter = cache !== false
@@ -1278,6 +1297,55 @@
       target[DATA_PROPTERTY_NAME][key] = value;
     }
     defineAccessor(target, key, getter, setter);
+  }
+
+  function reactive (vm, data) {
+    if (!data) { return }
+    var reactiveData = data;
+    if (typeof data === 'function') {
+      reactiveData = data();
+    }
+    Object.keys(reactiveData).forEach(function (key) {
+      defineReactive(vm, key, vm[key]);
+    });
+  }
+  function makeComputed$1 (vm, computed, config) {
+    var this$1 = this;
+
+    reactive(vm, config['data']);
+    reactive(vm, config['public']);
+    reactive(vm, config['protected']);
+    reactive(vm, config['private']);
+    defineValue(vm, WATCHERS_PROPERTY_NAME, [], false);
+    Object.keys(computed).forEach(function (key) {
+      vm.$set(key, '');
+      var descriptor = Object.getOwnPropertyDescriptor(vm, key);
+      var getterOrAccessor = computed[key];
+      var setter, getter;
+      if (isFunction(getterOrAccessor)) {
+        getter = getterOrAccessor;
+        setter = noop;
+      } else {
+        getter = getterOrAccessor.get;
+        setter = getterOrAccessor.set ? getterOrAccessor.set.bind(vm) : noop;
+      }
+      Object.defineProperty(this$1, key, {
+        configurable: true,
+        enumerable: true,
+        get: descriptor.get,
+        set: setter
+      });
+      ob.watche(vm, getter, function (val, oldVal) {
+        if (val === oldVal) { return }
+        descriptor.set.call(vm, val);
+        console.log(key, val, oldVal);
+      }, {
+        deep: true,
+        lazy: false,
+        sync: true,
+      });
+      descriptor.set.call(vm, getter.call(vm));
+    });
   }
 
   var Store = function Store (options) {
@@ -1756,7 +1824,7 @@
     var injectRef = Object.getPrototypeOf(global) || global;
     if (injectRef.$store) { return }
     injectRef.$store = store;
-    injectRef.$ob = ob;
+    injectRef.$makeComputed = makeComputed$1;
   }
 
   /**
@@ -1949,12 +2017,8 @@
     var computed = config.computed;
     delete config.computed;
     beforeSlice(config, 'onInit', function() {
-      var this$1 = this;
-
       this.$store = global.$store;
-      Object.keys(computed).forEach(function (key) {
-        global.$ob.compute(this$1, key, computed[key]);
-      });
+      computed && global.$makeComputed(this, computed, config);
     });
     return config
   }

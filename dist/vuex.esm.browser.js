@@ -1089,7 +1089,7 @@ function makeComputed (owner, getter, ob) {
 ob.default = watch$1;
 ob.deep = ob.lazy = ob.sync = false;
 
-Object.setPrototypeOf(ob, {react, compute, watch: watch$1, observe: init});
+Object.setPrototypeOf(ob, {react, compute, watch: watch$1, watche: watch, observe: init, computeNotInit});
 
 /**
  * ob
@@ -1142,6 +1142,25 @@ function react (options, target) {
 
 function compute (target, name, getterOrAccessor, cache) {
   init(target);
+  computeNotInit(target, name, getterOrAccessor, cache);
+}
+
+/**
+ * Compute property do not init
+ *
+ * @public
+ * @param {Object} target
+ * @param {String} name
+ * @param {Function|Object} getterOrAccessor
+ *        - Function getter
+ *        - Object accessor
+ *          - Function [get]  - getter
+ *          - Function [set]  - setter
+ *          - Boolean [cache]
+ * @param {Boolean} [cache]
+ */
+
+function computeNotInit (target, name, getterOrAccessor, cache) {
   let getter, setter;
   if (isFunction(getterOrAccessor)) {
     getter = cache !== false
@@ -1280,6 +1299,53 @@ function proxy (target, key) {
     target[DATA_PROPTERTY_NAME][key] = value;
   }
   defineAccessor(target, key, getter, setter);
+}
+
+function reactive (vm, data) {
+  if (!data) return
+  let reactiveData = data;
+  if (typeof data === 'function') {
+    reactiveData = data();
+  }
+  Object.keys(reactiveData).forEach(key => {
+    defineReactive(vm, key, vm[key]);
+  });
+}
+function makeComputed$1 (vm, computed, config) {
+  reactive(vm, config['data']);
+  reactive(vm, config['public']);
+  reactive(vm, config['protected']);
+  reactive(vm, config['private']);
+  defineValue(vm, WATCHERS_PROPERTY_NAME, [], false);
+  Object.keys(computed).forEach(key => {
+    vm.$set(key, '');
+    const descriptor = Object.getOwnPropertyDescriptor(vm, key);
+    const getterOrAccessor = computed[key];
+    let setter, getter;
+    if (isFunction(getterOrAccessor)) {
+      getter = getterOrAccessor;
+      setter = noop;
+    } else {
+      getter = getterOrAccessor.get;
+      setter = getterOrAccessor.set ? getterOrAccessor.set.bind(vm) : noop;
+    }
+    Object.defineProperty(this, key, {
+      configurable: true,
+      enumerable: true,
+      get: descriptor.get,
+      set: setter
+    });
+    ob.watche(vm, getter, (val, oldVal) => {
+      if (val === oldVal) return
+      descriptor.set.call(vm, val);
+      console.log(key, val, oldVal);
+    }, {
+      deep: true,
+      lazy: false,
+      sync: true,
+    });
+    descriptor.set.call(vm, getter.call(vm));
+  });
 }
 
 class Store {
@@ -1741,7 +1807,7 @@ function install(store) {
   const injectRef = Object.getPrototypeOf(global) || global;
   if (injectRef.$store) return
   injectRef.$store = store;
-  injectRef.$ob = ob;
+  injectRef.$makeComputed = makeComputed$1;
 }
 
 /**
@@ -1917,9 +1983,7 @@ function Component (config) {
   delete config.computed;
   beforeSlice(config, 'onInit', function() {
     this.$store = global.$store;
-    Object.keys(computed).forEach(key => {
-      global.$ob.compute(this, key, computed[key]);
-    });
+    computed && global.$makeComputed(this, computed, config);
   });
   return config
 }
