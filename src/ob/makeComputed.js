@@ -44,7 +44,6 @@ export default function makeComputed (vm, computed, config) {
       get: descriptor.get,
       set: setter
     })
-    descriptor.set.call(vm, getter.call(vm))
     ob.watche(vm, getter, (val, oldVal) => {
       if (val === oldVal) return
       descriptor.set.call(vm, val)
@@ -54,5 +53,6 @@ export default function makeComputed (vm, computed, config) {
       lazy: false,
       sync: true,
     })
+    descriptor.set.call(vm, getter.call(vm))
   })
 }
