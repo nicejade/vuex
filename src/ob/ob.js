@@ -22,7 +22,7 @@ import {
 ob.default = watch
 ob.deep = ob.lazy = ob.sync = false
 
-Object.setPrototypeOf(ob, {react, compute, watch, observe: init})
+Object.setPrototypeOf(ob, {react, compute, watch, watche, observe: init, computeNotInit})
 
 /**
  * ob
@@ -75,6 +75,25 @@ function react (options, target) {
 
 function compute (target, name, getterOrAccessor, cache) {
   init(target)
+  computeNotInit(target, name, getterOrAccessor, cache)
+}
+
+/**
+ * Compute property do not init
+ *
+ * @public
+ * @param {Object} target
+ * @param {String} name
+ * @param {Function|Object} getterOrAccessor
+ *        - Function getter
+ *        - Object accessor
+ *          - Function [get]  - getter
+ *          - Function [set]  - setter
+ *          - Boolean [cache]
+ * @param {Boolean} [cache]
+ */
+
+function computeNotInit (target, name, getterOrAccessor, cache) {
   let getter, setter
   if (isFunction(getterOrAccessor)) {
     getter = cache !== false

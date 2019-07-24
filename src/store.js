@@ -1,7 +1,7 @@
 import ModuleCollection from './module/module-collection'
 import { forEachValue, isObject, isPromise, assert, partial } from './util'
 import ob from './ob/index.js'
-
+import makeComputed from './ob/makeComputed'
 export class Store {
   constructor (options = {}) {
     // Auto install if it is not done yet and `window` has `Vue`.
@@ -461,5 +461,5 @@ export function install(store) {
   const injectRef = Object.getPrototypeOf(global) || global
   if (injectRef.$store) return
   injectRef.$store = store
-  injectRef.$ob = ob
+  injectRef.$makeComputed = makeComputed
 }

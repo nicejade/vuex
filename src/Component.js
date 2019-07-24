@@ -4,9 +4,7 @@ export default function Component (config) {
   delete config.computed
   beforeSlice(config, 'onInit', function() {
     this.$store = global.$store
-    Object.keys(computed).forEach(key => {
-      global.$ob.compute(this, key, computed[key])
-    })
+    computed && global.$makeComputed(this, computed, config)
   })
   return config
 }
