@@ -1,28 +1,28 @@
 import {
   observe,
-  defineReactive,
+  defineReactive
 } from './observe'
 import {
   watch as watche,
-  makeComputed,
+  makeComputed
 } from './watcher'
 import {
   defineValue,
   defineAccessor,
   noop,
   isFunction,
-  everyEntries,
+  everyEntries
 } from './util'
 import {
   WATCHERS_PROPERTY_NAME,
-  DATA_PROPTERTY_NAME,
+  DATA_PROPTERTY_NAME
 } from './constants'
 
 // Only could be react, compute or watch
 ob.default = watch
 ob.deep = ob.lazy = ob.sync = false
 
-Object.setPrototypeOf(ob, {react, compute, watch, watche, observe: init, computeNotInit})
+Object.setPrototypeOf(ob, { compute, watch, watche, observe: init })
 
 /**
  * ob
@@ -38,24 +38,6 @@ Object.setPrototypeOf(ob, {react, compute, watch, watche, observe: init, compute
 export default function ob (target, expression, func, options) {
   init(target)
   return ob.default(target, expression, func, options)
-}
-
-/**
- * React options
- *
- * @public
- * @param {Object} options
- * @param {Object} [target]
- * @return {Function} ob
- */
-
-function react (options, target) {
-  init(target || {})
-  options.methods && carryMethods(target, options.methods)
-  options.data && reactProperties(target, options.data)
-  options.computed && computeProperties(target, options.computed)
-  options.watchers && watchProperties(target, options.watchers)
-  return target
 }
 
 /**
@@ -75,37 +57,18 @@ function react (options, target) {
 
 function compute (target, name, getterOrAccessor, cache) {
   init(target)
-  computeNotInit(target, name, getterOrAccessor, cache)
-}
-
-/**
- * Compute property do not init
- *
- * @public
- * @param {Object} target
- * @param {String} name
- * @param {Function|Object} getterOrAccessor
- *        - Function getter
- *        - Object accessor
- *          - Function [get]  - getter
- *          - Function [set]  - setter
- *          - Boolean [cache]
- * @param {Boolean} [cache]
- */
-
-function computeNotInit (target, name, getterOrAccessor, cache) {
   let getter, setter
   if (isFunction(getterOrAccessor)) {
     getter = cache !== false
-            ? makeComputed(target, getterOrAccessor, ob)
-            : getterOrAccessor.bind(this)
+      ? makeComputed(target, getterOrAccessor, ob)
+      : getterOrAccessor.bind(this)
     setter = noop
   } else {
     getter = getterOrAccessor.get
-            ? getterOrAccessor.cache !== false || cache !== false
-              ? makeComputed(target, getterOrAccessor.get, ob)
-              : getterOrAccessor.get.bind(this)
-            : noop
+      ? getterOrAccessor.cache !== false || cache !== false
+        ? makeComputed(target, getterOrAccessor.get, ob)
+        : getterOrAccessor.get.bind(this)
+      : noop
     setter = getterOrAccessor.set ? getterOrAccessor.set.bind(this) : noop
   }
   defineAccessor(target, name, getter, setter)
@@ -136,26 +99,12 @@ function watch (target, expressionOrFunction, callback, options = ob) {
  */
 
 function init (target) {
-  if (!target || !target.hasOwnProperty) {return}
-  if (target.hasOwnProperty(WATCHERS_PROPERTY_NAME)) {
-    return
-  }
+  if (!target || !target.hasOwnProperty) return
+  if (target.hasOwnProperty(WATCHERS_PROPERTY_NAME)) return
   defineValue(target, WATCHERS_PROPERTY_NAME, [], false)
   defineValue(target, DATA_PROPTERTY_NAME, Object.create(null), false)
   observe(target[DATA_PROPTERTY_NAME])
   reactSelfProperties(target)
-}
-
-/**
- * @private
- * @param {Object} target
- * @param {Object} methods
- */
-
-function carryMethods (target, methods) {
-  everyEntries(methods, (name, method) => {
-    target[name] = method.bind(target)
-  })
 }
 
 /**
@@ -174,47 +123,11 @@ function reactProperty (target, key, value) {
 /**
  * @private
  * @param {Object} target
- * @param {Object} properties
- */
-
-function reactProperties (target, properties) {
-  everyEntries(properties, (key, value) => reactProperty(target, key, value))
-}
-
-/**
- * @private
- * @param {Object} target
  */
 
 function reactSelfProperties (target) {
   everyEntries(target, (key, value) => {
     !isFunction(value) && reactProperty(target, key, value)
-  })
-}
-
-/**
- * @private
- * @param {Object} target
- * @param {Object} properties
- */
-
-function computeProperties (target, properties) {
-  everyEntries(properties, (key, value) => compute(target, key, value))
-}
-
-/**
- * @private
- * @param {Object} target
- * @param {Object} properties
- */
-
-function watchProperties (target, properties) {
-  everyEntries(properties, (expression, functionOrOption) => {
-    if (isFunction(functionOrOption)) {
-      watch(target, expression, functionOrOption)
-    } else {
-      watch(target, expression, functionOrOption.watcher, functionOrOption)
-    }
   })
 }
 

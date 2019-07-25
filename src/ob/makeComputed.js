@@ -38,7 +38,7 @@ export default function makeComputed (vm, computed, config) {
       getter = getterOrAccessor.get
       setter = getterOrAccessor.set ? getterOrAccessor.set.bind(vm) : noop
     }
-    Object.defineProperty(this, key, {
+    Object.defineProperty(vm, key, {
       configurable: true,
       enumerable: true,
       get: descriptor.get,
@@ -47,7 +47,6 @@ export default function makeComputed (vm, computed, config) {
     ob.watche(vm, getter, (val, oldVal) => {
       if (val === oldVal) return
       descriptor.set.call(vm, val)
-      console.log(key, val, oldVal)
     }, {
       deep: true,
       lazy: false,

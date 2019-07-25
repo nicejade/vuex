@@ -2,6 +2,9 @@ import ModuleCollection from './module/module-collection'
 import { forEachValue, isObject, isPromise, assert, partial } from './util'
 import ob from './ob/index.js'
 import makeComputed from './ob/makeComputed'
+import {
+  defineReactive
+} from './ob/observe'
 export class Store {
   constructor (options = {}) {
     // Auto install if it is not done yet and `window` has `Vue`.
@@ -200,10 +203,11 @@ export class Store {
     resetStore(this)
   }
 
-  // hotUpdate (newOptions) {
-  //   this._modules.update(newOptions)
-  //   resetStore(this, true)
-  // }
+  hotUpdate (newOptions) {
+    console.log('hot update call', newOptions)
+    // this._modules.update(newOptions)
+    // resetStore(this, true)
+  }
 
   _withCommit (fn) {
     const committing = this._committing
@@ -282,6 +286,7 @@ function installModule (store, rootState, path, module, hot) {
     store._withCommit(() => {
       console.log('Vue.set', parentState, moduleName, module.state)
       // Vue.set(parentState, moduleName, module.state)
+      defineReactive(parentState, moduleName, module.state)
     })
   }
 
