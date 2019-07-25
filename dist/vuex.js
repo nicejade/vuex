@@ -1085,7 +1085,7 @@
   ob.default = watch$1;
   ob.deep = ob.lazy = ob.sync = false;
 
-  Object.setPrototypeOf(ob, {react: react, compute: compute, watch: watch$1, watche: watch, observe: init, computeNotInit: computeNotInit});
+  Object.setPrototypeOf(ob, { compute: compute, watch: watch$1, watche: watch, observe: init });
 
   /**
    * ob
@@ -1101,24 +1101,6 @@
   function ob (target, expression, func, options) {
     init(target);
     return ob.default(target, expression, func, options)
-  }
-
-  /**
-   * React options
-   *
-   * @public
-   * @param {Object} options
-   * @param {Object} [target]
-   * @return {Function} ob
-   */
-
-  function react (options, target) {
-    init(target || {});
-    options.methods && carryMethods(target, options.methods);
-    options.data && reactProperties(target, options.data);
-    options.computed && computeProperties(target, options.computed);
-    options.watchers && watchProperties(target, options.watchers);
-    return target
   }
 
   /**
@@ -1138,37 +1120,18 @@
 
   function compute (target, name, getterOrAccessor, cache) {
     init(target);
-    computeNotInit(target, name, getterOrAccessor, cache);
-  }
-
-  /**
-   * Compute property do not init
-   *
-   * @public
-   * @param {Object} target
-   * @param {String} name
-   * @param {Function|Object} getterOrAccessor
-   *        - Function getter
-   *        - Object accessor
-   *          - Function [get]  - getter
-   *          - Function [set]  - setter
-   *          - Boolean [cache]
-   * @param {Boolean} [cache]
-   */
-
-  function computeNotInit (target, name, getterOrAccessor, cache) {
     var getter, setter;
     if (isFunction(getterOrAccessor)) {
       getter = cache !== false
-              ? makeComputed(target, getterOrAccessor, ob)
-              : getterOrAccessor.bind(this);
+        ? makeComputed(target, getterOrAccessor, ob)
+        : getterOrAccessor.bind(this);
       setter = noop;
     } else {
       getter = getterOrAccessor.get
-              ? getterOrAccessor.cache !== false || cache !== false
-                ? makeComputed(target, getterOrAccessor.get, ob)
-                : getterOrAccessor.get.bind(this)
-              : noop;
+        ? getterOrAccessor.cache !== false || cache !== false
+          ? makeComputed(target, getterOrAccessor.get, ob)
+          : getterOrAccessor.get.bind(this)
+        : noop;
       setter = getterOrAccessor.set ? getterOrAccessor.set.bind(this) : noop;
     }
     defineAccessor(target, name, getter, setter);
@@ -1201,26 +1164,12 @@
    */
 
   function init (target) {
-    if (!target || !target.hasOwnProperty) {return}
-    if (target.hasOwnProperty(WATCHERS_PROPERTY_NAME)) {
-      return
-    }
+    if (!target || !target.hasOwnProperty) { return }
+    if (target.hasOwnProperty(WATCHERS_PROPERTY_NAME)) { return }
     defineValue(target, WATCHERS_PROPERTY_NAME, [], false);
     defineValue(target, DATA_PROPTERTY_NAME, Object.create(null), false);
     observe(target[DATA_PROPTERTY_NAME]);
     reactSelfProperties(target);
-  }
-
-  /**
-   * @private
-   * @param {Object} target
-   * @param {Object} methods
-   */
-
-  function carryMethods (target, methods) {
-    everyEntries(methods, function (name, method) {
-      target[name] = method.bind(target);
-    });
   }
 
   /**
@@ -1239,47 +1188,11 @@
   /**
    * @private
    * @param {Object} target
-   * @param {Object} properties
-   */
-
-  function reactProperties (target, properties) {
-    everyEntries(properties, function (key, value) { return reactProperty(target, key, value); });
-  }
-
-  /**
-   * @private
-   * @param {Object} target
    */
 
   function reactSelfProperties (target) {
     everyEntries(target, function (key, value) {
       !isFunction(value) && reactProperty(target, key, value);
-    });
-  }
-
-  /**
-   * @private
-   * @param {Object} target
-   * @param {Object} properties
-   */
-
-  function computeProperties (target, properties) {
-    everyEntries(properties, function (key, value) { return compute(target, key, value); });
-  }
-
-  /**
-   * @private
-   * @param {Object} target
-   * @param {Object} properties
-   */
-
-  function watchProperties (target, properties) {
-    everyEntries(properties, function (expression, functionOrOption) {
-      if (isFunction(functionOrOption)) {
-        watch$1(target, expression, functionOrOption);
-      } else {
-        watch$1(target, expression, functionOrOption.watcher, functionOrOption);
-      }
     });
   }
 
@@ -1310,8 +1223,6 @@
     });
   }
   function makeComputed$1 (vm, computed, config) {
-    var this$1 = this;
-
     reactive(vm, config['data']);
     reactive(vm, config['public']);
     reactive(vm, config['protected']);
@@ -1329,7 +1240,7 @@
         getter = getterOrAccessor.get;
         setter = getterOrAccessor.set ? getterOrAccessor.set.bind(vm) : noop;
       }
-      Object.defineProperty(this$1, key, {
+      Object.defineProperty(vm, key, {
         configurable: true,
         enumerable: true,
         get: descriptor.get,
@@ -1338,7 +1249,6 @@
       ob.watche(vm, getter, function (val, oldVal) {
         if (val === oldVal) { return }
         descriptor.set.call(vm, val);
-        console.log(key, val, oldVal);
       }, {
         deep: true,
         lazy: false,
@@ -1560,10 +1470,11 @@
     resetStore(this);
   };
 
-  // hotUpdate (newOptions) {
-  // this._modules.update(newOptions)
-  // resetStore(this, true)
-  // }
+  Store.prototype.hotUpdate = function hotUpdate (newOptions) {
+    console.log('hot update call', newOptions);
+    // this._modules.update(newOptions)
+    // resetStore(this, true)
+  };
 
   Store.prototype._withCommit = function _withCommit (fn) {
     var committing = this._committing;
@@ -1643,6 +1554,7 @@
       store._withCommit(function () {
         console.log('Vue.set', parentState, moduleName, module.state);
         // Vue.set(parentState, moduleName, module.state)
+        defineReactive(parentState, moduleName, module.state);
       });
     }
 
@@ -2016,10 +1928,49 @@
   function Component (config) {
     var computed = config.computed;
     delete config.computed;
-    beforeSlice(config, 'onInit', function() {
+    var watch = config.watch;
+    delete config.watch;
+    beforeSlice(config, 'onInit', function () {
+      var this$1 = this;
+      var args = [], len = arguments.length;
+      while ( len-- ) args[ len ] = arguments[ len ];
+
       this.$store = global.$store;
       computed && global.$makeComputed(this, computed, config);
+      if (watch) {
+        Object.keys(watch).forEach(function (key) {
+          this$1.$watch(key, watch[key]);
+        });
+      }
+      if (config.beforeCreate) {
+        config.beforeCreate.apply(this, args);
+      }
     });
+    beforeSlice(config, 'onReady', function () {
+      var args = [], len = arguments.length;
+      while ( len-- ) args[ len ] = arguments[ len ];
+
+      if (config.created) {
+        config.created.apply(this, args);
+      }
+    });
+    if (config.methods) {
+      Object.keys(config.methods).forEach(function (key) {
+        if (config[key]) { return }
+        config[key] = config.methods[key];
+      });
+      delete config.methods;
+    }
+    if (watch) {
+      Object.keys(watch).forEach(function (key, index) {
+        if (typeof watch[key] === 'function') {
+          var callbackname = 'on_Data_Change' + '_' + index;
+          config[callbackname] = watch[key];
+          watch[key] = callbackname;
+          console.log('1', watch, callbackname, config);
+        }
+      });
+    }
     return config
   }
 

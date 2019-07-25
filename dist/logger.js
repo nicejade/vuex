@@ -130,21 +130,16 @@
           // render
           try {
             startMessage.call(logger, message);
-          } catch (e) {
-            console.log(e, message);
-          }
-
-          logger.log('%c prev state', 'color: #9E9E9E; font-weight: bold', transformer(prevState));
-          logger.log('%c mutation', 'color: #03A9F4; font-weight: bold', formattedMutation);
-          logger.log('%c next state', 'color: #4CAF50; font-weight: bold', transformer(nextState));
-
-          try {
+            logger.log('%c prev state', 'color: #9E9E9E; font-weight: bold', transformer(prevState));
+            logger.log('%c mutation', 'color: #03A9F4; font-weight: bold', formattedMutation);
+            logger.log('%c next state', 'color: #4CAF50; font-weight: bold', transformer(nextState));
             logger.groupEnd();
           } catch (e) {
-            logger.log('—— log end ——');
+            logger.log('prev state', transformer(prevState));
+            logger.log('mutation', formattedMutation);
+            logger.log('next state', transformer(nextState));
           }
         }
-
         prevState = nextState;
       });
     }
