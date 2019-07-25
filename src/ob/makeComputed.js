@@ -1,6 +1,6 @@
 import ob from './ob.js'
 import {
-  defineReactive,
+  defineReactive
 } from './observe'
 import {
   defineValue,
@@ -50,7 +50,7 @@ export default function makeComputed (vm, computed, config) {
     }, {
       deep: true,
       lazy: false,
-      sync: true,
+      sync: true
     })
     descriptor.set.call(vm, getter.call(vm))
   })

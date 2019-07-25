@@ -71,39 +71,39 @@ export function partial (fn, arg) {
   }
 }
 
-export function firstUpcase(str) {
+export function firstUpcase (str) {
   if (typeof str !== 'string') return str
   if (!str) return str
   return str.replace(/^([a-z])/, $0 => $0.toUpperCase())
 }
 
-function fnSlice(isBefore, target, key, fn) {
+function fnSlice (isBefore, target, key, fn) {
   let fn_ = fn
   if (!fn_) {
     const firstUpcaseKey = firstUpcase(key)
-    const fullKey = (isBefore ? 'before' : 'after') + firstUpcaseKey;
-    fn_ = target[fullKey];
+    const fullKey = (isBefore ? 'before' : 'after') + firstUpcaseKey
+    fn_ = target[fullKey]
     if (!fn_) return
   }
   if (target[key]) {
-    const _self = target[key];
+    const _self = target[key]
     target[key] = function (...args) {
       if (isBefore) {
-        fn_.apply(this, args);
+        fn_.apply(this, args)
       }
-      _self.apply(this, args);
+      _self.apply(this, args)
       if (!isBefore) {
-        fn_.apply(this, args);
+        fn_.apply(this, args)
       }
-    };
+    }
   } else {
     target[key] = function (...args) {
       if (isBefore) {
-        fn_.apply(this, args);
+        fn_.apply(this, args)
       } else {
-        fn_.apply(this, args);
+        fn_.apply(this, args)
       }
-    };
+    }
   }
 }
 

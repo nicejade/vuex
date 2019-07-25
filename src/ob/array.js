@@ -1,5 +1,5 @@
-import {defineValue} from './util'
-import {OB_NAME} from './constants'
+import { defineValue } from './util'
+import { OB_NAME } from './constants'
 
 const arrayPrototype = Array.prototype
 const arrayMethods = Object.create(arrayPrototype)
@@ -10,7 +10,7 @@ const arrayMutativeMethods = [
   'unshift',
   'splice',
   'sort',
-  'reverse',
+  'reverse'
 ]
 
 /**

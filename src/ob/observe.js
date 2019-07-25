@@ -5,9 +5,9 @@ import {
   defineAccessor,
   isArray,
   isPlainObject,
-  everyEntries,
+  everyEntries
 } from './util'
-import {OB_NAME} from './constants'
+import { OB_NAME } from './constants'
 
 /**
  * Observer class that are attached to each observed
@@ -82,13 +82,13 @@ export function observe (value) {
   if (!value || typeof value !== 'object') return
   let observer
   if (
-    Object.prototype.hasOwnProperty.call(value, OB_NAME)
-    && value[OB_NAME] instanceof Observer
+    Object.prototype.hasOwnProperty.call(value, OB_NAME) &&
+    value[OB_NAME] instanceof Observer
   ) {
     observer = value[OB_NAME]
   } else if (
-    (isArray(value) || isPlainObject(value))
-    && Object.isExtensible(value)
+    (isArray(value) || isPlainObject(value)) &&
+    Object.isExtensible(value)
   ) {
     observer = new Observer(value)
   }

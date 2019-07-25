@@ -1,4 +1,4 @@
-import {DEBUGGING} from './constants'
+import { DEBUGGING } from './constants'
 
 /**
  * Define property with value.
@@ -14,7 +14,7 @@ export function defineValue (object, property, value, enumerable) {
     value,
     enumerable: !!enumerable,
     writable: true,
-    configurable: true,
+    configurable: true
   })
 }
 
@@ -32,7 +32,7 @@ export function defineAccessor (object, property, getter, setter) {
     get: getter,
     set: setter,
     enumerable: true,
-    configurable: true,
+    configurable: true
   })
 }
 
@@ -106,11 +106,11 @@ export function noop () {}
  * @param {String} string
  */
 
-export const warn = typeof DEBUGGING !== undefined && DEBUGGING
-  && typeof console !== 'undefined' && console
-  && isFunction(console.warn)
-    ? console.warn
-    : noop
+export const warn = typeof DEBUGGING !== undefined && DEBUGGING &&
+  typeof console !== 'undefined' && console &&
+  isFunction(console.warn)
+  ? console.warn
+  : noop
 
 export let _Set
 if (typeof Set !== 'undefined' && Set.toString().match(/native code/)) {

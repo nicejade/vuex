@@ -57,7 +57,6 @@ export class Store {
 
     // apply plugins
     plugins.forEach(plugin => plugin(this))
-
   }
 
   get state () {
@@ -462,7 +461,7 @@ function unifyObjectStyle (type, payload, options) {
   return { type, payload, options }
 }
 
-export function install(store) {
+export function install (store) {
   const injectRef = Object.getPrototypeOf(global) || global
   if (injectRef.$store) return
   injectRef.$store = store

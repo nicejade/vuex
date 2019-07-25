@@ -5,14 +5,13 @@ import {
   isArray,
   isObject,
   isFunction,
-  _Set as Set,
+  _Set as Set
 } from './util'
-import {WATCHERS_PROPERTY_NAME} from './constants'
+import { WATCHERS_PROPERTY_NAME } from './constants'
 
 let uid = 0
 
 class Watcher {
-
   /**
    * A watcher parses an expression, collects dependencies,
    * and fires callback when the expression value changes.
@@ -132,10 +131,10 @@ class Watcher {
     if (this.active) {
       const value = this.get()
       if (
-        value !== this.value
+        value !== this.value ||
         // Deep watchers and watchers on Object/Arrays should fire even when
         // the value is the same, because the value may have mutated;
-        || ((isObject(value) || this.options.deep))
+        ((isObject(value) || this.options.deep))
       ) {
         const oldValue = this.value
         this.value = value
@@ -220,8 +219,8 @@ function traverse (value) {
 export function watch (owner, expressionOrFunction, callback, options) {
   // parse expression for getter
   const getter = isFunction(expressionOrFunction)
-               ? expressionOrFunction
-               : parseExpression(expressionOrFunction)
+    ? expressionOrFunction
+    : parseExpression(expressionOrFunction)
   return new Watcher(owner, getter, callback, options)
 }
 
@@ -236,7 +235,7 @@ export function makeComputed (owner, getter, ob) {
   const watcher = new Watcher(owner, getter, null, {
     deep: ob.deep,
     lazy: true,
-    sync: ob.sync,
+    sync: ob.sync
   })
   return function computedGetter () {
     if (watcher.options.lazy && Dep.target && !Dep.target.options.lazy) {
