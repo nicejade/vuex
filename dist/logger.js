@@ -54,13 +54,13 @@
     return copy
   }
 
-  function firstUpcase(str) {
+  function firstUpcase (str) {
     if (typeof str !== 'string') { return str }
     if (!str) { return str }
     return str.replace(/^([a-z])/, function ($0) { return $0.toUpperCase(); })
   }
 
-  function fnSlice(isBefore, target, key, fn) {
+  function fnSlice (isBefore, target, key, fn) {
     var fn_ = fn;
     if (!fn_) {
       var firstUpcaseKey = firstUpcase(key);

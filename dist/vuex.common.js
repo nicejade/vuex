@@ -39,13 +39,13 @@ function partial (fn, arg) {
   }
 }
 
-function firstUpcase(str) {
+function firstUpcase (str) {
   if (typeof str !== 'string') { return str }
   if (!str) { return str }
   return str.replace(/^([a-z])/, function ($0) { return $0.toUpperCase(); })
 }
 
-function fnSlice(isBefore, target, key, fn) {
+function fnSlice (isBefore, target, key, fn) {
   var fn_ = fn;
   if (!fn_) {
     var firstUpcaseKey = firstUpcase(key);
@@ -332,8 +332,8 @@ var OB_NAME = '__ob__';
 var WATCHERS_PROPERTY_NAME = '__watchers__';
 var DATA_PROPTERTY_NAME = '__data__';
 
-var DEBUGGING = typeof process !== 'undefined'
-  && process.env.NODE_ENV !== 'production';
+var DEBUGGING = typeof process !== 'undefined' &&
+  process.env.NODE_ENV !== 'production';
 
 /**
  * Define property with value.
@@ -349,7 +349,7 @@ function defineValue (object, property, value, enumerable) {
     value: value,
     enumerable: !!enumerable,
     writable: true,
-    configurable: true,
+    configurable: true
   });
 }
 
@@ -367,7 +367,7 @@ function defineAccessor (object, property, getter, setter) {
     get: getter,
     set: setter,
     enumerable: true,
-    configurable: true,
+    configurable: true
   });
 }
 
@@ -441,11 +441,11 @@ function noop () {}
  * @param {String} string
  */
 
-var warn = typeof DEBUGGING !== undefined && DEBUGGING
-  && typeof console !== 'undefined' && console
-  && isFunction(console.warn)
-    ? console.warn
-    : noop;
+var warn = typeof DEBUGGING !== undefined && DEBUGGING &&
+  typeof console !== 'undefined' && console &&
+  isFunction(console.warn)
+  ? console.warn
+  : noop;
 
 var _Set;
 if (typeof Set !== 'undefined' && Set.toString().match(/native code/)) {
@@ -476,7 +476,8 @@ var arrayMutativeMethods = [
   'unshift',
   'splice',
   'sort',
-  'reverse' ];
+  'reverse'
+];
 
 /**
  * Augment an target Array with arrayMethods
@@ -632,13 +633,13 @@ function observe (value) {
   if (!value || typeof value !== 'object') { return }
   var observer;
   if (
-    Object.prototype.hasOwnProperty.call(value, OB_NAME)
-    && value[OB_NAME] instanceof Observer
+    Object.prototype.hasOwnProperty.call(value, OB_NAME) &&
+    value[OB_NAME] instanceof Observer
   ) {
     observer = value[OB_NAME];
   } else if (
-    (isArray(value) || isPlainObject(value))
-    && Object.isExtensible(value)
+    (isArray(value) || isPlainObject(value)) &&
+    Object.isExtensible(value)
   ) {
     observer = new Observer(value);
   }
@@ -797,7 +798,7 @@ var nextTick = (function () {
     var observer = new MutationObserver(nextTickHandler);
     /* global */
     var textNode = document.createTextNode(counter);
-    observer.observe(textNode, {characterData: true});
+    observer.observe(textNode, { characterData: true });
     timerFunction = function () {
       counter = (counter + 1) % 2;
       textNode.data = counter;
@@ -806,8 +807,8 @@ var nextTick = (function () {
     // webpack attempts to inject a shim for setImmediate
     // if it is used as a global, so we have to work around that to
     // avoid bundling unnecessary code.
-    var inBrowser = typeof window !== 'undefined'
-      && Object.prototype.toString.call(window) !== '[object Object]';
+    var inBrowser = typeof window !== 'undefined' &&
+      Object.prototype.toString.call(window) !== '[object Object]';
     var context =
       inBrowser ? window : typeof global !== 'undefined' ? global : {};
     timerFunction = context.setImmediate || setTimeout;
@@ -952,10 +953,10 @@ Watcher.prototype.run = function run () {
   if (this.active) {
     var value = this.get();
     if (
-      value !== this.value
+      value !== this.value ||
       // Deep watchers and watchers on Object/Arrays should fire even when
       // the value is the same, because the value may have mutated;
-      || ((isObject$1(value) || this.options.deep))
+      ((isObject$1(value) || this.options.deep))
     ) {
       var oldValue = this.value;
       this.value = value;
@@ -1039,8 +1040,8 @@ function traverse (value) {
 function watch (owner, expressionOrFunction, callback, options) {
   // parse expression for getter
   var getter = isFunction(expressionOrFunction)
-               ? expressionOrFunction
-               : parse(expressionOrFunction);
+    ? expressionOrFunction
+    : parse(expressionOrFunction);
   return new Watcher(owner, getter, callback, options)
 }
 
@@ -1055,7 +1056,7 @@ function makeComputed (owner, getter, ob) {
   var watcher = new Watcher(owner, getter, null, {
     deep: ob.deep,
     lazy: true,
-    sync: ob.sync,
+    sync: ob.sync
   });
   return function computedGetter () {
     if (watcher.options.lazy && Dep.target && !Dep.target.options.lazy) {
@@ -1248,7 +1249,7 @@ function makeComputed$1 (vm, computed, config) {
     }, {
       deep: true,
       lazy: false,
-      sync: true,
+      sync: true
     });
     descriptor.set.call(vm, getter.call(vm));
   });
@@ -1308,7 +1309,6 @@ var Store = function Store (options) {
 
   // apply plugins
   plugins.forEach(function (plugin) { return plugin(this$1); });
-
 };
 
 var prototypeAccessors$1 = { state: { configurable: true } };
@@ -1728,7 +1728,7 @@ function unifyObjectStyle (type, payload, options) {
   return { type: type, payload: payload, options: options }
 }
 
-function install(store) {
+function install (store) {
   var injectRef = Object.getPrototypeOf(global) || global;
   if (injectRef.$store) { return }
   injectRef.$store = store;
