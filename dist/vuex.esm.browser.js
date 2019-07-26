@@ -1,5 +1,5 @@
 /**
- * vuex v1.0.0
+ * vuex v1.0.1
  * (c) 2019 Evan You
  * @license MIT
  */
@@ -853,12 +853,16 @@ class Watcher {
    * @constructor
    */
 
-  constructor (owner, getter, callback, options) {
+  constructor (owner, getter, callback, options = {}) {
     owner[WATCHERS_PROPERTY_NAME].push(this);
     this.owner = owner;
     this.getter = getter;
     this.callback = callback;
-    this.options = options;
+    this.options = Object.assign({
+      lazy: false,
+      deep: true,
+      sync: true
+    }, options);
     // uid for batching
     this.id = ++uid$1;
     this.active = true;
@@ -1165,7 +1169,7 @@ function watch$1 (target, expressionOrFunction, callback, options = ob) {
  */
 
 function init (target) {
-  if (!target || !target.hasOwnProperty) return
+  if (!target || !target.hasOwnProperty || typeof target !== 'object') return
   if (target.hasOwnProperty(WATCHERS_PROPERTY_NAME)) return
   defineValue(target, WATCHERS_PROPERTY_NAME, [], false);
   defineValue(target, DATA_PROPTERTY_NAME, Object.create(null), false);
@@ -1418,7 +1422,7 @@ class Store {
     {
       assert(typeof getter === 'function', `store.watch only accepts a function.`);
     }
-    return ob(() => getter(this.state, this.getters), cb, options)
+    return ob.watche(this.state, () => getter(this.state, this.getters), cb, options)
   }
 
   replaceState (state) {
@@ -1453,14 +1457,14 @@ class Store {
       const parentState = getNestedState(this.state, path.slice(0, -1));
       console.log('Vue.delete', parentState, path[path.length - 1]);
       // Vue.delete(parentState, path[path.length - 1])
+      delete parentState[path[path.length - 1]];
     });
     resetStore(this);
   }
 
   hotUpdate (newOptions) {
-    console.log('hot update call', newOptions);
-    // this._modules.update(newOptions)
-    // resetStore(this, true)
+    this._modules.update(newOptions);
+    resetStore(this);
   }
 
   _withCommit (fn) {
@@ -1505,7 +1509,7 @@ function resetStoreVM (store, state) {
     // use computed to leverage its lazy-caching mechanism
     // direct inline function use will lead to closure preserving oldVm.
     // using partial to return function with only arguments preserved in closure enviroment.
-    ob.compute(getters, key, partial(fn, state));
+    ob.compute(getters, key, partial(fn, store));
     Object.defineProperty(store.getters, key, {
       get: () => store._vm.getters[key],
       enumerable: true // for local getters
@@ -1935,7 +1939,7 @@ function Component (config) {
 var index_esm = {
   Store,
   install,
-  version: '1.0.0',
+  version: '1.0.1',
   Component,
   mapState,
   mapMutations,

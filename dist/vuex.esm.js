@@ -1,5 +1,5 @@
 /**
- * vuex v1.0.0
+ * vuex v1.0.1
  * (c) 2019 Evan You
  * @license MIT
  */
@@ -847,11 +847,17 @@ function batch (watcher) {
 var uid$1 = 0;
 
 var Watcher = function Watcher (owner, getter, callback, options) {
+  if ( options === void 0 ) options = {};
+
   owner[WATCHERS_PROPERTY_NAME].push(this);
   this.owner = owner;
   this.getter = getter;
   this.callback = callback;
-  this.options = options;
+  this.options = Object.assign({
+    lazy: false,
+    deep: true,
+    sync: true
+  }, options);
   // uid for batching
   this.id = ++uid$1;
   this.active = true;
@@ -1159,7 +1165,7 @@ function watch$1 (target, expressionOrFunction, callback, options) {
  */
 
 function init (target) {
-  if (!target || !target.hasOwnProperty) { return }
+  if (!target || !target.hasOwnProperty || typeof target !== 'object') { return }
   if (target.hasOwnProperty(WATCHERS_PROPERTY_NAME)) { return }
   defineValue(target, WATCHERS_PROPERTY_NAME, [], false);
   defineValue(target, DATA_PROPTERTY_NAME, Object.create(null), false);
@@ -1420,7 +1426,7 @@ Store.prototype.watch = function watch (getter, cb, options) {
   if (process.env.NODE_ENV !== 'production') {
     assert(typeof getter === 'function', "store.watch only accepts a function.");
   }
-  return ob(function () { return getter(this$1.state, this$1.getters); }, cb, options)
+  return ob.watche(this.state, function () { return getter(this$1.state, this$1.getters); }, cb, options)
 };
 
 Store.prototype.replaceState = function replaceState (state) {
@@ -1461,14 +1467,14 @@ Store.prototype.unregisterModule = function unregisterModule (path) {
     var parentState = getNestedState(this$1.state, path.slice(0, -1));
     console.log('Vue.delete', parentState, path[path.length - 1]);
     // Vue.delete(parentState, path[path.length - 1])
+    delete parentState[path[path.length - 1]];
   });
   resetStore(this);
 };
 
 Store.prototype.hotUpdate = function hotUpdate (newOptions) {
-  console.log('hot update call', newOptions);
-  // this._modules.update(newOptions)
-  // resetStore(this, true)
+  this._modules.update(newOptions);
+  resetStore(this);
 };
 
 Store.prototype._withCommit = function _withCommit (fn) {
@@ -1514,7 +1520,7 @@ function resetStoreVM (store, state) {
     // use computed to leverage its lazy-caching mechanism
     // direct inline function use will lead to closure preserving oldVm.
     // using partial to return function with only arguments preserved in closure enviroment.
-    ob.compute(getters, key, partial(fn, state));
+    ob.compute(getters, key, partial(fn, store));
     Object.defineProperty(store.getters, key, {
       get: function () { return store._vm.getters[key]; },
       enumerable: true // for local getters
@@ -1971,7 +1977,7 @@ function Component (config) {
 var index_esm = {
   Store: Store,
   install: install,
-  version: '1.0.0',
+  version: '1.0.1',
   Component: Component,
   mapState: mapState,
   mapMutations: mapMutations,

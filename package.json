@@ -20,7 +20,7 @@
     "build:main": "node build/build.main.js",
     "build:logger": "rollup -c build/rollup.logger.config.js",
     "lint": "eslint src test",
-    "test": "npm run lint && npm run test:types && npm run test:unit",
+    "test": "npm run lint && npm run test:unit",
     "test:unit": "rollup -c build/rollup.dev.config.js && jasmine JASMINE_CONFIG_PATH=test/unit/jasmine.json",
     "test:types": "tsc -p types/test",
     "release": "bash build/release.sh"
