@@ -1,5 +1,5 @@
 {
-  "name": "@mtfe/quickapp-vuex",
+  "name": "quickapp-vuex",
   "version": "1.0.0",
   "description": "state management for quickapp",
   "main": "dist/vuex.common.js",
@@ -25,16 +25,8 @@
     "test:types": "tsc -p types/test",
     "release": "bash build/release.sh"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/vuejs/vuex.git"
-  },
-  "author": "Evan You",
+  "author": "duanyuwen",
   "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/vuejs/vuex/issues"
-  },
-  "homepage": "https://github.com/vuejs/vuex#readme",
   "devDependencies": {
     "babel-core": "^6.22.1",
     "babel-loader": "^7.1.2",
