@@ -11,7 +11,7 @@ import {
   WATCHERS_PROPERTY_NAME
 } from './constants'
 function reactive (vm, data) {
-  if (!data) return
+  if (!vm || !data) return
   let reactiveData = data
   if (typeof data === 'function') {
     reactiveData = data()
@@ -21,6 +21,7 @@ function reactive (vm, data) {
   })
 }
 export default function makeComputed (vm, computed, config) {
+  reactive(vm['_props'], config['props'])
   reactive(vm, config['data'])
   reactive(vm, config['public'])
   reactive(vm, config['protected'])
