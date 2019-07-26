@@ -163,7 +163,7 @@ export class Store {
     if (process.env.NODE_ENV !== 'production') {
       assert(typeof getter === 'function', `store.watch only accepts a function.`)
     }
-    return ob(() => getter(this.state, this.getters), cb, options)
+    return ob.watche(this.state, () => getter(this.state, this.getters), cb, options)
   }
 
   replaceState (state) {
@@ -198,14 +198,14 @@ export class Store {
       const parentState = getNestedState(this.state, path.slice(0, -1))
       console.log('Vue.delete', parentState, path[path.length - 1])
       // Vue.delete(parentState, path[path.length - 1])
+      delete parentState[path[path.length - 1]]
     })
     resetStore(this)
   }
 
   hotUpdate (newOptions) {
-    console.log('hot update call', newOptions)
-    // this._modules.update(newOptions)
-    // resetStore(this, true)
+    this._modules.update(newOptions)
+    resetStore(this, true)
   }
 
   _withCommit (fn) {
@@ -250,7 +250,7 @@ function resetStoreVM (store, state) {
     // use computed to leverage its lazy-caching mechanism
     // direct inline function use will lead to closure preserving oldVm.
     // using partial to return function with only arguments preserved in closure enviroment.
-    ob.compute(getters, key, partial(fn, state))
+    ob.compute(getters, key, partial(fn, store))
     Object.defineProperty(store.getters, key, {
       get: () => store._vm.getters[key],
       enumerable: true // for local getters

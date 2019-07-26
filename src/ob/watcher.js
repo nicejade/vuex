@@ -26,12 +26,16 @@ class Watcher {
    * @constructor
    */
 
-  constructor (owner, getter, callback, options) {
+  constructor (owner, getter, callback, options = {}) {
     owner[WATCHERS_PROPERTY_NAME].push(this)
     this.owner = owner
     this.getter = getter
     this.callback = callback
-    this.options = options
+    this.options = Object.assign({
+      lazy: false,
+      deep: true,
+      sync: true
+    }, options)
     // uid for batching
     this.id = ++uid
     this.active = true

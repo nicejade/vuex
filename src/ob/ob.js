@@ -99,7 +99,7 @@ function watch (target, expressionOrFunction, callback, options = ob) {
  */
 
 function init (target) {
-  if (!target || !target.hasOwnProperty) return
+  if (!target || !target.hasOwnProperty || typeof target !== 'object') return
   if (target.hasOwnProperty(WATCHERS_PROPERTY_NAME)) return
   defineValue(target, WATCHERS_PROPERTY_NAME, [], false)
   defineValue(target, DATA_PROPTERTY_NAME, Object.create(null), false)

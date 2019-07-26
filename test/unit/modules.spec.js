@@ -1,4 +1,3 @@
-import Vue from 'vue'
 import Vuex from '../../dist/vuex.common.js'
 
 const TEST = 'TEST'
@@ -120,10 +119,10 @@ describe('Modules', () => {
     store.registerModule(['b', 'c'], {
       state: { value: 2 }
     })
-    Vue.nextTick(() => {
+    setTimeout(() => {
       expect(spy).not.toHaveBeenCalled()
       done()
-    })
+    }, 0)
   })
 
   describe('modules usage', () => {
@@ -691,13 +690,13 @@ describe('Modules', () => {
         store.state
       )
       expect(afterSpy).not.toHaveBeenCalled()
-      Vue.nextTick(() => {
+      setTimeout(() => {
         expect(afterSpy).toHaveBeenCalledWith(
           { type: TEST, payload: 2 },
           store.state
         )
         done()
-      })
+      }, 0)
     })
   })
 
