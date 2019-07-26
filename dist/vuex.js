@@ -1214,7 +1214,7 @@
   }
 
   function reactive (vm, data) {
-    if (!data) { return }
+    if (!vm || !data) { return }
     var reactiveData = data;
     if (typeof data === 'function') {
       reactiveData = data();
@@ -1224,6 +1224,7 @@
     });
   }
   function makeComputed$1 (vm, computed, config) {
+    reactive(vm['_props'], config['props']);
     reactive(vm, config['data']);
     reactive(vm, config['public']);
     reactive(vm, config['protected']);
@@ -1967,7 +1968,6 @@
           var callbackname = 'on_Data_Change' + '_' + index;
           config[callbackname] = watch[key];
           watch[key] = callbackname;
-          console.log('1', watch, callbackname, config);
         }
       });
     }
