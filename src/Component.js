@@ -35,7 +35,6 @@ export default function Component (config) {
         const callbackname = 'on_Data_Change' + '_' + index
         config[callbackname] = watch[key]
         watch[key] = callbackname
-        console.log('1', watch, callbackname, config)
       }
     })
   }
