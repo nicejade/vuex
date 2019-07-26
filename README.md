@@ -63,8 +63,7 @@ Vuex.install(store)
 </template>
 
 <script>
-import Vuex from 'quickapp-vue'
-const {mapGetters, mapMutations} = Vuex.createNamespacedHelpers('counter')
+import {mapGetters, mapMutations} from 'quickapp-vue'
 export default Vuex.Component({
   computed: {
     ...mapGetters(['count'])
