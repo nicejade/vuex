@@ -3,7 +3,7 @@
 > Centralized State Management for quickapp.
 > 移植了vuex到快应用，支持了几乎所有的功能，支持computed, watch, methods
 
-支持度： 目前测试了部分手机，1030+都支持
+支持度： 目前测试了部分手机，1010及1010以上都支持
 
 魅族 | 华为 | 小米 | OPPO
 
@@ -63,8 +63,8 @@ Vuex.install(store)
 </template>
 
 <script>
-import {mapGetters, mapMutations} from 'quickapp-vue'
-export default Vuex.Component({
+import {mapGetters, mapMutations, Component} from 'quickapp-vue'
+export default Component({
   computed: {
     ...mapGetters(['count'])
   },
