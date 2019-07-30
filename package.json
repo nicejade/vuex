@@ -26,6 +26,14 @@
     "release": "bash build/release.sh"
   },
   "author": "Evan You, duanyuwen",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dyw934854565/vuex.git"
+  },
+  "bugs": {
+    "url": "https://github.com/dyw934854565/vuex/issues"
+  },
+  "homepage": "https://github.com/dyw934854565/vuex#readme",
   "license": "MIT",
   "devDependencies": {
     "babel-core": "^6.22.1",
