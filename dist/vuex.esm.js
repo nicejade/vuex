@@ -1,5 +1,5 @@
 /**
- * vuex v1.0.1
+ * vuex v1.0.3
  * (c) 2019 Evan You
  * @license MIT
  */
@@ -1977,7 +1977,7 @@ function Component (config) {
 var index_esm = {
   Store: Store,
   install: install,
-  version: '1.0.1',
+  version: '1.0.3',
   Component: Component,
   mapState: mapState,
   mapMutations: mapMutations,
