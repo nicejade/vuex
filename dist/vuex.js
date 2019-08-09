@@ -1,5 +1,5 @@
 /**
- * vuex v1.0.4
+ * vuex v1.0.5
  * (c) 2019 Evan You
  * @license MIT
  */
@@ -1242,10 +1242,10 @@
       var getterOrAccessor = computed[key];
       var setter, getter;
       if (isFunction(getterOrAccessor)) {
-        getter = getterOrAccessor;
+        getter = getterOrAccessor.bind(vm);
         setter = noop;
       } else {
-        getter = getterOrAccessor.get;
+        getter = getterOrAccessor.get.bind(vm);
         setter = getterOrAccessor.set ? getterOrAccessor.set.bind(vm) : noop;
       }
       Object.defineProperty(vm, key, {
@@ -1983,7 +1983,7 @@
   var index = {
     Store: Store,
     install: install,
-    version: '1.0.4',
+    version: '1.0.5',
     Component: Component,
     mapState: mapState,
     mapMutations: mapMutations,
