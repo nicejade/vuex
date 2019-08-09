@@ -33,10 +33,10 @@ export default function makeComputed (vm, computed, config) {
     const getterOrAccessor = computed[key]
     let setter, getter
     if (isFunction(getterOrAccessor)) {
-      getter = getterOrAccessor
+      getter = getterOrAccessor.bind(vm)
       setter = noop
     } else {
-      getter = getterOrAccessor.get
+      getter = getterOrAccessor.get.bind(vm)
       setter = getterOrAccessor.set ? getterOrAccessor.set.bind(vm) : noop
     }
     Object.defineProperty(vm, key, {
