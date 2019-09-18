@@ -13,6 +13,9 @@
 
 使用前请先学习Vuex
 
+demo
+- [demo项目](https://github.com/dyw934854565/quickapp-vuex-demo)
+
 安装
 ```
 npm install quickapp-vuex -S
