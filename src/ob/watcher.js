@@ -123,7 +123,8 @@ class Watcher {
     } else if (this.options.sync) {
       this.run()
     } else {
-      batch(this)
+      // @desc: Fix vuex getter can`t return Array Or Object.
+      // batch(this)
     }
   }
 
