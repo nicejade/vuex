@@ -39,7 +39,10 @@ class Dep {
    */
 
   depend () {
-    Dep.target.addDep(this)
+    // @desc: Fix bug: vuex Component cannot use Array Or Object.
+    if (Dep.target) {
+      Dep.target.addDep(this)
+    }
   }
 
   /**
