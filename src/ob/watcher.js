@@ -26,7 +26,7 @@ class Watcher {
    * @constructor
    */
 
-  constructor (owner, getter, callback, options = {}) {
+  constructor(owner, getter, callback, options = {}) {
     owner[WATCHERS_PROPERTY_NAME].push(this)
     this.owner = owner
     this.getter = getter
@@ -54,7 +54,7 @@ class Watcher {
    * Evaluate the getter, and re-collect dependencies.
    */
 
-  get () {
+  get() {
     this.beforeGet()
     const scope = this.owner
     const value = this.getter.call(scope, scope)
@@ -69,7 +69,7 @@ class Watcher {
    * Prepare for dependency collection.
    */
 
-  beforeGet () {
+  beforeGet() {
     Dep.target = this
   }
 
@@ -79,7 +79,7 @@ class Watcher {
    * @param {Dep} dep
    */
 
-  addDep (dep) {
+  addDep(dep) {
     const id = dep.id
     if (!this.newDepIds.has(id)) {
       this.newDepIds.add(id)
@@ -94,7 +94,7 @@ class Watcher {
    * Clean up for dependency collection.
    */
 
-  afterGet () {
+  afterGet() {
     Dep.target = null
     let i = this.deps.length
     while (i--) {
@@ -117,14 +117,13 @@ class Watcher {
    * Will be called when a dependency changes.
    */
 
-  update () {
+  update() {
     if (this.options.lazy) {
       this.dirty = true
     } else if (this.options.sync) {
       this.run()
     } else {
-      // @desc: Fix vuex getter can`t return Array Or Object.
-      // batch(this)
+      batch(this)
     }
   }
 
@@ -132,7 +131,7 @@ class Watcher {
    * Will be called by the batcher.
    */
 
-  run () {
+  run() {
     if (this.active) {
       const value = this.get()
       if (
@@ -153,7 +152,7 @@ class Watcher {
    * This only gets called for lazy watchers.
    */
 
-  evaluate () {
+  evaluate() {
     // avoid overwriting another watcher that is being collected.
     const current = Dep.target
     this.value = this.get()
@@ -165,7 +164,7 @@ class Watcher {
    * Depend on all deps collected by this watcher.
    */
 
-  depend () {
+  depend() {
     let i = this.deps.length
     while (i--) {
       this.deps[i].depend()
@@ -176,7 +175,7 @@ class Watcher {
    * Remove self from all dependencies' subcriber list.
    */
 
-  teardown () {
+  teardown() {
     if (this.active) {
       let i = this.deps.length
       while (i--) {
@@ -196,7 +195,7 @@ class Watcher {
  * @param {*} value
  */
 
-function traverse (value) {
+function traverse(value) {
   let i, keys
   if (isArray(value)) {
     i = value.length
@@ -221,7 +220,7 @@ function traverse (value) {
  * @return {Watcher}
  */
 
-export function watch (owner, expressionOrFunction, callback, options) {
+export function watch(owner, expressionOrFunction, callback, options) {
   // parse expression for getter
   const getter = isFunction(expressionOrFunction)
     ? expressionOrFunction
@@ -236,13 +235,13 @@ export function watch (owner, expressionOrFunction, callback, options) {
  * @param {Function} getter
  */
 
-export function makeComputed (owner, getter, ob) {
+export function makeComputed(owner, getter, ob) {
   const watcher = new Watcher(owner, getter, null, {
     deep: ob.deep,
     lazy: true,
     sync: ob.sync
   })
-  return function computedGetter () {
+  return function computedGetter() {
     if (watcher.options.lazy && Dep.target && !Dep.target.options.lazy) {
       watcher.options.lazy = false
       watcher.callback = function () {

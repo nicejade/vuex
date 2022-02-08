@@ -35,7 +35,7 @@ Object.setPrototypeOf(ob, { compute, watch, watche, observe: init })
  * @return {Function} ob
  */
 
-export default function ob (target, expression, func, options) {
+export default function ob(target, expression, func, options) {
   init(target)
   return ob.default(target, expression, func, options)
 }
@@ -55,11 +55,11 @@ export default function ob (target, expression, func, options) {
  * @param {Boolean} [cache]
  */
 
-function compute (target, name, getterOrAccessor, cache) {
+function compute(target, name, getterOrAccessor, cache) {
   init(target)
   let getter, setter
   if (isFunction(getterOrAccessor)) {
-    getter = cache !== false
+    getter = !!cache
       ? makeComputed(target, getterOrAccessor, ob)
       : getterOrAccessor.bind(this)
     setter = noop
@@ -88,7 +88,7 @@ function compute (target, name, getterOrAccessor, cache) {
  * @return {Watcher}
  */
 
-function watch (target, expressionOrFunction, callback, options = ob) {
+function watch(target, expressionOrFunction, callback, options = ob) {
   init(target)
   return watche(target, expressionOrFunction, callback, options)
 }
@@ -98,7 +98,7 @@ function watch (target, expressionOrFunction, callback, options = ob) {
  * @param {Object} target
  */
 
-function init (target) {
+function init(target) {
   if (!target || !target.hasOwnProperty || typeof target !== 'object') return
   if (target.hasOwnProperty(WATCHERS_PROPERTY_NAME)) return
   defineValue(target, WATCHERS_PROPERTY_NAME, [], false)
@@ -114,7 +114,7 @@ function init (target) {
  * @param {*} value
  */
 
-function reactProperty (target, key, value) {
+function reactProperty(target, key, value) {
   target[DATA_PROPTERTY_NAME][key] = value
   defineReactive(target[DATA_PROPTERTY_NAME], key, value)
   proxy(target, key)
@@ -125,7 +125,7 @@ function reactProperty (target, key, value) {
  * @param {Object} target
  */
 
-function reactSelfProperties (target) {
+function reactSelfProperties(target) {
   everyEntries(target, (key, value) => {
     !isFunction(value) && reactProperty(target, key, value)
   })
@@ -137,11 +137,11 @@ function reactSelfProperties (target) {
  * @param {String} key
  */
 
-function proxy (target, key) {
-  function getter () {
+function proxy(target, key) {
+  function getter() {
     return target[DATA_PROPTERTY_NAME][key]
   }
-  function setter (value) {
+  function setter(value) {
     target[DATA_PROPTERTY_NAME][key] = value
   }
   defineAccessor(target, key, getter, setter)
