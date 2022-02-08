@@ -1,6 +1,6 @@
 /**
- * vuex v1.0.5
- * (c) 2019 Evan You
+ * vuex v1.0.3
+ * (c) 2022 Evan You
  * @license MIT
  */
 /**
@@ -311,7 +311,10 @@ Dep.prototype.removeSub = function removeSub (sub) {
  */
 
 Dep.prototype.depend = function depend () {
-  Dep.target.addDep(this);
+  // @desc: Fix bug: vuex Component cannot use Array Or Object.
+  if (Dep.target) {
+    Dep.target.addDep(this);
+  }
 };
 
 /**
@@ -846,7 +849,7 @@ function batch (watcher) {
 
 var uid$1 = 0;
 
-var Watcher = function Watcher (owner, getter, callback, options) {
+var Watcher = function Watcher(owner, getter, callback, options) {
   if ( options === void 0 ) options = {};
 
   owner[WATCHERS_PROPERTY_NAME].push(this);
@@ -1016,7 +1019,7 @@ Watcher.prototype.teardown = function teardown () {
  * @param {*} value
  */
 
-function traverse (value) {
+function traverse(value) {
   var i, keys;
   if (isArray(value)) {
     i = value.length;
@@ -1041,7 +1044,7 @@ function traverse (value) {
  * @return {Watcher}
  */
 
-function watch (owner, expressionOrFunction, callback, options) {
+function watch(owner, expressionOrFunction, callback, options) {
   // parse expression for getter
   var getter = isFunction(expressionOrFunction)
     ? expressionOrFunction
@@ -1056,13 +1059,13 @@ function watch (owner, expressionOrFunction, callback, options) {
  * @param {Function} getter
  */
 
-function makeComputed (owner, getter, ob) {
+function makeComputed(owner, getter, ob) {
   var watcher = new Watcher(owner, getter, null, {
     deep: ob.deep,
     lazy: true,
     sync: ob.sync
   });
-  return function computedGetter () {
+  return function computedGetter() {
     if (watcher.options.lazy && Dep.target && !Dep.target.options.lazy) {
       watcher.options.lazy = false;
       watcher.callback = function () {
@@ -1099,7 +1102,7 @@ Object.setPrototypeOf(ob, { compute: compute, watch: watch$1, watche: watch, obs
  * @return {Function} ob
  */
 
-function ob (target, expression, func, options) {
+function ob(target, expression, func, options) {
   init(target);
   return ob.default(target, expression, func, options)
 }
@@ -1119,11 +1122,11 @@ function ob (target, expression, func, options) {
  * @param {Boolean} [cache]
  */
 
-function compute (target, name, getterOrAccessor, cache) {
+function compute(target, name, getterOrAccessor, cache) {
   init(target);
   var getter, setter;
   if (isFunction(getterOrAccessor)) {
-    getter = cache !== false
+    getter = !!cache
       ? makeComputed(target, getterOrAccessor, ob)
       : getterOrAccessor.bind(this);
     setter = noop;
@@ -1152,7 +1155,7 @@ function compute (target, name, getterOrAccessor, cache) {
  * @return {Watcher}
  */
 
-function watch$1 (target, expressionOrFunction, callback, options) {
+function watch$1(target, expressionOrFunction, callback, options) {
   if ( options === void 0 ) options = ob;
 
   init(target);
@@ -1164,7 +1167,7 @@ function watch$1 (target, expressionOrFunction, callback, options) {
  * @param {Object} target
  */
 
-function init (target) {
+function init(target) {
   if (!target || !target.hasOwnProperty || typeof target !== 'object') { return }
   if (target.hasOwnProperty(WATCHERS_PROPERTY_NAME)) { return }
   defineValue(target, WATCHERS_PROPERTY_NAME, [], false);
@@ -1180,7 +1183,7 @@ function init (target) {
  * @param {*} value
  */
 
-function reactProperty (target, key, value) {
+function reactProperty(target, key, value) {
   target[DATA_PROPTERTY_NAME][key] = value;
   defineReactive(target[DATA_PROPTERTY_NAME], key, value);
   proxy(target, key);
@@ -1191,7 +1194,7 @@ function reactProperty (target, key, value) {
  * @param {Object} target
  */
 
-function reactSelfProperties (target) {
+function reactSelfProperties(target) {
   everyEntries(target, function (key, value) {
     !isFunction(value) && reactProperty(target, key, value);
   });
@@ -1203,11 +1206,11 @@ function reactSelfProperties (target) {
  * @param {String} key
  */
 
-function proxy (target, key) {
-  function getter () {
+function proxy(target, key) {
+  function getter() {
     return target[DATA_PROPTERTY_NAME][key]
   }
-  function setter (value) {
+  function setter(value) {
     target[DATA_PROPTERTY_NAME][key] = value;
   }
   defineAccessor(target, key, getter, setter);
@@ -1474,7 +1477,7 @@ Store.prototype.unregisterModule = function unregisterModule (path) {
 
 Store.prototype.hotUpdate = function hotUpdate (newOptions) {
   this._modules.update(newOptions);
-  resetStore(this);
+  resetStore(this, true);
 };
 
 Store.prototype._withCommit = function _withCommit (fn) {
@@ -1977,7 +1980,7 @@ function Component (config) {
 var index_esm = {
   Store: Store,
   install: install,
-  version: '1.0.5',
+  version: '1.0.3',
   Component: Component,
   mapState: mapState,
   mapMutations: mapMutations,
@@ -1987,4 +1990,4 @@ var index_esm = {
 };
 
 export default index_esm;
-export { Component, Store, createNamespacedHelpers, install, mapActions, mapGetters, mapMutations, mapState };
+export { Store, install, Component, mapState, mapMutations, mapGetters, mapActions, createNamespacedHelpers };

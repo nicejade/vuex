@@ -1,6 +1,6 @@
 /**
- * vuex v1.0.5
- * (c) 2019 Evan You
+ * vuex v1.0.3
+ * (c) 2022 Evan You
  * @license MIT
  */
 /**
@@ -307,7 +307,10 @@ class Dep {
    */
 
   depend () {
-    Dep.target.addDep(this);
+    // @desc: Fix bug: vuex Component cannot use Array Or Object.
+    if (Dep.target) {
+      Dep.target.addDep(this);
+    }
   }
 
   /**
@@ -853,7 +856,7 @@ class Watcher {
    * @constructor
    */
 
-  constructor (owner, getter, callback, options = {}) {
+  constructor(owner, getter, callback, options = {}) {
     owner[WATCHERS_PROPERTY_NAME].push(this);
     this.owner = owner;
     this.getter = getter;
@@ -881,7 +884,7 @@ class Watcher {
    * Evaluate the getter, and re-collect dependencies.
    */
 
-  get () {
+  get() {
     this.beforeGet();
     const scope = this.owner;
     const value = this.getter.call(scope, scope);
@@ -896,7 +899,7 @@ class Watcher {
    * Prepare for dependency collection.
    */
 
-  beforeGet () {
+  beforeGet() {
     Dep.target = this;
   }
 
@@ -906,7 +909,7 @@ class Watcher {
    * @param {Dep} dep
    */
 
-  addDep (dep) {
+  addDep(dep) {
     const id = dep.id;
     if (!this.newDepIds.has(id)) {
       this.newDepIds.add(id);
@@ -921,7 +924,7 @@ class Watcher {
    * Clean up for dependency collection.
    */
 
-  afterGet () {
+  afterGet() {
     Dep.target = null;
     let i = this.deps.length;
     while (i--) {
@@ -944,7 +947,7 @@ class Watcher {
    * Will be called when a dependency changes.
    */
 
-  update () {
+  update() {
     if (this.options.lazy) {
       this.dirty = true;
     } else if (this.options.sync) {
@@ -958,7 +961,7 @@ class Watcher {
    * Will be called by the batcher.
    */
 
-  run () {
+  run() {
     if (this.active) {
       const value = this.get();
       if (
@@ -979,7 +982,7 @@ class Watcher {
    * This only gets called for lazy watchers.
    */
 
-  evaluate () {
+  evaluate() {
     // avoid overwriting another watcher that is being collected.
     const current = Dep.target;
     this.value = this.get();
@@ -991,7 +994,7 @@ class Watcher {
    * Depend on all deps collected by this watcher.
    */
 
-  depend () {
+  depend() {
     let i = this.deps.length;
     while (i--) {
       this.deps[i].depend();
@@ -1002,7 +1005,7 @@ class Watcher {
    * Remove self from all dependencies' subcriber list.
    */
 
-  teardown () {
+  teardown() {
     if (this.active) {
       let i = this.deps.length;
       while (i--) {
@@ -1022,7 +1025,7 @@ class Watcher {
  * @param {*} value
  */
 
-function traverse (value) {
+function traverse(value) {
   let i, keys;
   if (isArray(value)) {
     i = value.length;
@@ -1047,7 +1050,7 @@ function traverse (value) {
  * @return {Watcher}
  */
 
-function watch (owner, expressionOrFunction, callback, options) {
+function watch(owner, expressionOrFunction, callback, options) {
   // parse expression for getter
   const getter = isFunction(expressionOrFunction)
     ? expressionOrFunction
@@ -1062,13 +1065,13 @@ function watch (owner, expressionOrFunction, callback, options) {
  * @param {Function} getter
  */
 
-function makeComputed (owner, getter, ob) {
+function makeComputed(owner, getter, ob) {
   const watcher = new Watcher(owner, getter, null, {
     deep: ob.deep,
     lazy: true,
     sync: ob.sync
   });
-  return function computedGetter () {
+  return function computedGetter() {
     if (watcher.options.lazy && Dep.target && !Dep.target.options.lazy) {
       watcher.options.lazy = false;
       watcher.callback = function () {
@@ -1105,7 +1108,7 @@ Object.setPrototypeOf(ob, { compute, watch: watch$1, watche: watch, observe: ini
  * @return {Function} ob
  */
 
-function ob (target, expression, func, options) {
+function ob(target, expression, func, options) {
   init(target);
   return ob.default(target, expression, func, options)
 }
@@ -1125,11 +1128,11 @@ function ob (target, expression, func, options) {
  * @param {Boolean} [cache]
  */
 
-function compute (target, name, getterOrAccessor, cache) {
+function compute(target, name, getterOrAccessor, cache) {
   init(target);
   let getter, setter;
   if (isFunction(getterOrAccessor)) {
-    getter = cache !== false
+    getter = !!cache
       ? makeComputed(target, getterOrAccessor, ob)
       : getterOrAccessor.bind(this);
     setter = noop;
@@ -1158,7 +1161,7 @@ function compute (target, name, getterOrAccessor, cache) {
  * @return {Watcher}
  */
 
-function watch$1 (target, expressionOrFunction, callback, options = ob) {
+function watch$1(target, expressionOrFunction, callback, options = ob) {
   init(target);
   return watch(target, expressionOrFunction, callback, options)
 }
@@ -1168,7 +1171,7 @@ function watch$1 (target, expressionOrFunction, callback, options = ob) {
  * @param {Object} target
  */
 
-function init (target) {
+function init(target) {
   if (!target || !target.hasOwnProperty || typeof target !== 'object') return
   if (target.hasOwnProperty(WATCHERS_PROPERTY_NAME)) return
   defineValue(target, WATCHERS_PROPERTY_NAME, [], false);
@@ -1184,7 +1187,7 @@ function init (target) {
  * @param {*} value
  */
 
-function reactProperty (target, key, value) {
+function reactProperty(target, key, value) {
   target[DATA_PROPTERTY_NAME][key] = value;
   defineReactive(target[DATA_PROPTERTY_NAME], key, value);
   proxy(target, key);
@@ -1195,7 +1198,7 @@ function reactProperty (target, key, value) {
  * @param {Object} target
  */
 
-function reactSelfProperties (target) {
+function reactSelfProperties(target) {
   everyEntries(target, (key, value) => {
     !isFunction(value) && reactProperty(target, key, value);
   });
@@ -1207,11 +1210,11 @@ function reactSelfProperties (target) {
  * @param {String} key
  */
 
-function proxy (target, key) {
-  function getter () {
+function proxy(target, key) {
+  function getter() {
     return target[DATA_PROPTERTY_NAME][key]
   }
-  function setter (value) {
+  function setter(value) {
     target[DATA_PROPTERTY_NAME][key] = value;
   }
   defineAccessor(target, key, getter, setter);
@@ -1353,7 +1356,6 @@ class Store {
     this._subscribers.forEach(sub => sub(mutation, this.state));
 
     if (
-      
       options && options.silent
     ) {
       console.warn(
@@ -1464,7 +1466,7 @@ class Store {
 
   hotUpdate (newOptions) {
     this._modules.update(newOptions);
-    resetStore(this);
+    resetStore(this, true);
   }
 
   _withCommit (fn) {
@@ -1586,7 +1588,7 @@ function makeLocalContext (store, namespace, path) {
 
       if (!options || !options.root) {
         type = namespace + type;
-        if ( !store._actions[type]) {
+        if (!store._actions[type]) {
           console.error(`[vuex] unknown local action type: ${args.type}, global type: ${type}`);
           return
         }
@@ -1602,7 +1604,7 @@ function makeLocalContext (store, namespace, path) {
 
       if (!options || !options.root) {
         type = namespace + type;
-        if ( !store._mutations[type]) {
+        if (!store._mutations[type]) {
           console.error(`[vuex] unknown local mutation type: ${args.type}, global type: ${type}`);
           return
         }
@@ -1799,7 +1801,7 @@ const mapGetters = normalizeNamespace((namespace, getters) => {
       if (namespace && !getModuleByNamespace(this.$store, 'mapGetters', namespace)) {
         return
       }
-      if ( !(val in this.$store.getters)) {
+      if (!(val in this.$store.getters)) {
         console.error(`[vuex] unknown getter: ${val}`);
         return
       }
@@ -1889,7 +1891,7 @@ function normalizeNamespace (fn) {
  */
 function getModuleByNamespace (store, helper, namespace) {
   const module = store._modulesNamespaceMap[namespace];
-  if ( !module) {
+  if (!module) {
     console.error(`[vuex] module namespace not found in ${helper}(): ${namespace}`);
   }
   return module
@@ -1939,7 +1941,7 @@ function Component (config) {
 var index_esm = {
   Store,
   install,
-  version: '1.0.5',
+  version: '1.0.3',
   Component,
   mapState,
   mapMutations,
@@ -1949,4 +1951,4 @@ var index_esm = {
 };
 
 export default index_esm;
-export { Component, Store, createNamespacedHelpers, install, mapActions, mapGetters, mapMutations, mapState };
+export { Store, install, Component, mapState, mapMutations, mapGetters, mapActions, createNamespacedHelpers };

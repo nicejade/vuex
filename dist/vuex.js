@@ -1,6 +1,6 @@
 /**
- * vuex v1.0.5
- * (c) 2019 Evan You
+ * vuex v1.0.3
+ * (c) 2022 Evan You
  * @license MIT
  */
 (function (global, factory) {
@@ -317,7 +317,10 @@
    */
 
   Dep.prototype.depend = function depend () {
-    Dep.target.addDep(this);
+    // @desc: Fix bug: vuex Component cannot use Array Or Object.
+    if (Dep.target) {
+      Dep.target.addDep(this);
+    }
   };
 
   /**
@@ -852,7 +855,7 @@
 
   var uid$1 = 0;
 
-  var Watcher = function Watcher (owner, getter, callback, options) {
+  var Watcher = function Watcher(owner, getter, callback, options) {
     if ( options === void 0 ) options = {};
 
     owner[WATCHERS_PROPERTY_NAME].push(this);
@@ -1022,7 +1025,7 @@
    * @param {*} value
    */
 
-  function traverse (value) {
+  function traverse(value) {
     var i, keys;
     if (isArray(value)) {
       i = value.length;
@@ -1047,7 +1050,7 @@
    * @return {Watcher}
    */
 
-  function watch (owner, expressionOrFunction, callback, options) {
+  function watch(owner, expressionOrFunction, callback, options) {
     // parse expression for getter
     var getter = isFunction(expressionOrFunction)
       ? expressionOrFunction
@@ -1062,13 +1065,13 @@
    * @param {Function} getter
    */
 
-  function makeComputed (owner, getter, ob) {
+  function makeComputed(owner, getter, ob) {
     var watcher = new Watcher(owner, getter, null, {
       deep: ob.deep,
       lazy: true,
       sync: ob.sync
     });
-    return function computedGetter () {
+    return function computedGetter() {
       if (watcher.options.lazy && Dep.target && !Dep.target.options.lazy) {
         watcher.options.lazy = false;
         watcher.callback = function () {
@@ -1105,7 +1108,7 @@
    * @return {Function} ob
    */
 
-  function ob (target, expression, func, options) {
+  function ob(target, expression, func, options) {
     init(target);
     return ob.default(target, expression, func, options)
   }
@@ -1125,11 +1128,11 @@
    * @param {Boolean} [cache]
    */
 
-  function compute (target, name, getterOrAccessor, cache) {
+  function compute(target, name, getterOrAccessor, cache) {
     init(target);
     var getter, setter;
     if (isFunction(getterOrAccessor)) {
-      getter = cache !== false
+      getter = !!cache
         ? makeComputed(target, getterOrAccessor, ob)
         : getterOrAccessor.bind(this);
       setter = noop;
@@ -1158,7 +1161,7 @@
    * @return {Watcher}
    */
 
-  function watch$1 (target, expressionOrFunction, callback, options) {
+  function watch$1(target, expressionOrFunction, callback, options) {
     if ( options === void 0 ) options = ob;
 
     init(target);
@@ -1170,7 +1173,7 @@
    * @param {Object} target
    */
 
-  function init (target) {
+  function init(target) {
     if (!target || !target.hasOwnProperty || typeof target !== 'object') { return }
     if (target.hasOwnProperty(WATCHERS_PROPERTY_NAME)) { return }
     defineValue(target, WATCHERS_PROPERTY_NAME, [], false);
@@ -1186,7 +1189,7 @@
    * @param {*} value
    */
 
-  function reactProperty (target, key, value) {
+  function reactProperty(target, key, value) {
     target[DATA_PROPTERTY_NAME][key] = value;
     defineReactive(target[DATA_PROPTERTY_NAME], key, value);
     proxy(target, key);
@@ -1197,7 +1200,7 @@
    * @param {Object} target
    */
 
-  function reactSelfProperties (target) {
+  function reactSelfProperties(target) {
     everyEntries(target, function (key, value) {
       !isFunction(value) && reactProperty(target, key, value);
     });
@@ -1209,11 +1212,11 @@
    * @param {String} key
    */
 
-  function proxy (target, key) {
-    function getter () {
+  function proxy(target, key) {
+    function getter() {
       return target[DATA_PROPTERTY_NAME][key]
     }
-    function setter (value) {
+    function setter(value) {
       target[DATA_PROPTERTY_NAME][key] = value;
     }
     defineAccessor(target, key, getter, setter);
@@ -1360,7 +1363,6 @@
     this._subscribers.forEach(function (sub) { return sub(mutation, this$1.state); });
 
     if (
-      
       options && options.silent
     ) {
       console.warn(
@@ -1480,7 +1482,7 @@
 
   Store.prototype.hotUpdate = function hotUpdate (newOptions) {
     this._modules.update(newOptions);
-    resetStore(this);
+    resetStore(this, true);
   };
 
   Store.prototype._withCommit = function _withCommit (fn) {
@@ -1604,7 +1606,7 @@
 
         if (!options || !options.root) {
           type = namespace + type;
-          if ( !store._actions[type]) {
+          if (!store._actions[type]) {
             console.error(("[vuex] unknown local action type: " + (args.type) + ", global type: " + type));
             return
           }
@@ -1621,7 +1623,7 @@
 
         if (!options || !options.root) {
           type = namespace + type;
-          if ( !store._mutations[type]) {
+          if (!store._mutations[type]) {
             console.error(("[vuex] unknown local mutation type: " + (args.type) + ", global type: " + type));
             return
           }
@@ -1830,7 +1832,7 @@
         if (namespace && !getModuleByNamespace(this.$store, 'mapGetters', namespace)) {
           return
         }
-        if ( !(val in this.$store.getters)) {
+        if (!(val in this.$store.getters)) {
           console.error(("[vuex] unknown getter: " + val));
           return
         }
@@ -1926,7 +1928,7 @@
    */
   function getModuleByNamespace (store, helper, namespace) {
     var module = store._modulesNamespaceMap[namespace];
-    if ( !module) {
+    if (!module) {
       console.error(("[vuex] module namespace not found in " + helper + "(): " + namespace));
     }
     return module
@@ -1983,7 +1985,7 @@
   var index = {
     Store: Store,
     install: install,
-    version: '1.0.5',
+    version: '1.0.3',
     Component: Component,
     mapState: mapState,
     mapMutations: mapMutations,

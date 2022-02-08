@@ -1,6 +1,6 @@
 {
   "name": "qa-vuex",
-  "version": "1.0.1",
+  "version": "1.0.3",
   "description": "State management for quickapp development.",
   "main": "dist/vuex.common.js",
   "module": "dist/vuex.esm.js",
